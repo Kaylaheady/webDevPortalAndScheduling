@@ -54,11 +54,24 @@
             <div class="card-body">
               <form id="signupForm">
                 <div class="mb-3">
-                  <label for="signupName" class="form-label">Full Name</label>
+                  <label for="signupFirstName" class="form-label"
+                    >First Name</label
+                  >
                   <input
                     type="text"
                     class="form-control"
-                    id="signupName"
+                    id="signupFirstName"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="signupLastName" class="form-label"
+                    >Last Name</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="signupLastName"
                     required
                   />
                 </div>
@@ -135,12 +148,13 @@
       </div>
     </div>
 
-    <!-- Script -->
+    <!-- Supabase logic -->
     <script>
       window.onload = () => {
         const supabaseUrl = "https://edtmmwdoqzooehxlawae.supabase.co";
-        const supabaseKey = "eyJhbGciOi...<your-full-key>";
-        const client = supabase.createClient(supabaseUrl, supabaseKey);
+        const supabaseKey = "YOUR_ANON_KEY"; // Replace this
+        const { createClient } = supabase;
+        const client = createClient(supabaseUrl, supabaseKey);
 
         let currentUser = null;
 
@@ -150,6 +164,7 @@
             e.preventDefault();
             const email = document.getElementById("loginEmail").value;
             const password = document.getElementById("loginPassword").value;
+
             const { data, error } = await client.auth.signInWithPassword({
               email,
               password,
@@ -168,9 +183,11 @@
           .getElementById("signupForm")
           .addEventListener("submit", async (e) => {
             e.preventDefault();
-            const name = document.getElementById("signupName").value;
+            const first = document.getElementById("signupFirstName").value;
+            const last = document.getElementById("signupLastName").value;
             const email = document.getElementById("signupEmail").value;
             const password = document.getElementById("signupPassword").value;
+
             const { data: signUpData, error } = await client.auth.signUp({
               email,
               password,
@@ -180,9 +197,12 @@
                 "Sign-up failed: " + error.message;
               return;
             }
+
             await client
               .from("user_data")
-              .insert([{ id: signUpData.user.id, name }]);
+              .insert([
+                { id: signUpData.user.id, first_name: first, last_name: last },
+              ]);
             document.getElementById("signupMessage").textContent =
               "Sign-up successful! Please verify your email.";
             setTimeout(loadDashboard, 1000);
@@ -203,29 +223,31 @@
           document.getElementById("authSection").style.display = "none";
           document.getElementById("dashboard").style.display = "block";
           document.getElementById("welcomeMsg").textContent =
-            "Welcome, " + patient.name;
+            "Welcome, " + patient.first_name + " " + patient.last_name;
 
           const { data: appointments } = await client
             .from("appointments")
             .select("*")
-            .eq("patient_id", user.id);
+            .eq("patient", user.id);
           const { data: prescriptions } = await client
             .from("prescriptions")
             .select("*")
-            .eq("patient_id", user.id);
+            .eq("patient", user.id);
 
           const section = document.getElementById("recordSection");
           section.innerHTML = "<h5>Your Appointments</h5>";
           appointments.forEach((r) => {
             const div = document.createElement("div");
-            div.innerHTML = `<strong>${r.appointment_date}</strong> at ${r.appointment_time}<br>`;
+            div.innerHTML = `<strong>${r.date_time}</strong> (Doctor: ${
+              r.doctor ?? "N/A"
+            })<br>`;
             section.appendChild(div);
           });
 
           section.innerHTML += "<hr><h5>Your Prescriptions</h5>";
           prescriptions.forEach((p) => {
             const div = document.createElement("div");
-            div.innerHTML = `<strong>${p.date}</strong>: ${p.prescription}<br>`;
+            div.innerHTML = `${p.prescription}<br>`;
             section.appendChild(div);
           });
         }
@@ -236,13 +258,12 @@
             e.preventDefault();
             const date = document.getElementById("appointmentDate").value;
             const time = document.getElementById("appointmentTime").value;
+            const datetime = `${date}T${time}`;
 
             const { data: conflict } = await client
               .from("appointments")
               .select("*")
-              .eq("appointment_date", date)
-              .eq("appointment_time", time);
-
+              .eq("date_time", datetime);
             if (conflict.length > 0) {
               alert("Time slot already booked.");
               return;
@@ -250,9 +271,9 @@
 
             await client.from("appointments").insert([
               {
-                patient_id: currentUser.id,
-                appointment_date: date,
-                appointment_time: time,
+                patient: currentUser.id,
+                doctor: null,
+                date_time: datetime,
               },
             ]);
 
@@ -260,10 +281,10 @@
             loadDashboard();
           });
 
-        async function logout() {
+        window.logout = async function () {
           await client.auth.signOut();
           location.reload();
-        }
+        };
       };
     </script>
   </body>
