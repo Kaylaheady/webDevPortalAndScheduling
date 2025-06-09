@@ -14,37 +14,83 @@
     <div class="container py-5">
       <h2 class="mb-4 text-center">Online Appointment and Record System</h2>
 
-      <!-- Login / Signup Form -->
-      <div class="card mb-4" id="authCard">
-        <div class="card-header">Login or First-Time User</div>
-        <div class="card-body">
-          <form id="authForm">
-            <div class="mb-3">
-              <label for="email" class="form-label">Email</label>
-              <input type="email" class="form-control" id="email" required />
+      <!-- Auth Section -->
+      <div class="row mb-4" id="authSection">
+        <!-- Login Form -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header bg-light">Login</div>
+            <div class="card-body">
+              <form id="loginForm">
+                <div class="mb-3">
+                  <label for="loginEmail" class="form-label">Email</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="loginEmail"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="loginPassword" class="form-label">Password</label>
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="loginPassword"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-primary">Log In</button>
+              </form>
+              <div id="loginMessage" class="mt-3 text-success"></div>
             </div>
-            <div class="mb-3">
-              <label for="password" class="form-label">Password</label>
-              <input
-                type="password"
-                class="form-control"
-                id="password"
-                required
-              />
+          </div>
+        </div>
+
+        <!-- Sign Up Form -->
+        <div class="col-md-6">
+          <div class="card">
+            <div class="card-header bg-light">First-Time User / Sign Up</div>
+            <div class="card-body">
+              <form id="signupForm">
+                <div class="mb-3">
+                  <label for="signupName" class="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="signupName"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="signupEmail" class="form-label">Email</label>
+                  <input
+                    type="email"
+                    class="form-control"
+                    id="signupEmail"
+                    required
+                  />
+                </div>
+                <div class="mb-3">
+                  <label for="signupPassword" class="form-label"
+                    >Password</label
+                  >
+                  <input
+                    type="password"
+                    class="form-control"
+                    id="signupPassword"
+                    required
+                  />
+                </div>
+                <button type="submit" class="btn btn-success">Sign Up</button>
+              </form>
+              <div id="signupMessage" class="mt-3 text-success"></div>
             </div>
-            <div class="mb-3">
-              <label for="name" class="form-label"
-                >Full Name (First-time only)</label
-              >
-              <input type="text" class="form-control" id="name" />
-            </div>
-            <button type="submit" class="btn btn-primary">Continue</button>
-          </form>
-          <div id="authMessage" class="mt-3 text-success"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Dashboard (hidden until logged in) -->
+      <!-- Dashboard -->
       <div id="dashboard" style="display: none">
         <h4 id="welcomeMsg"></h4>
         <button class="btn btn-secondary mb-4" onclick="logout()">
@@ -81,7 +127,7 @@
 
         <!-- Record Viewer -->
         <div class="card">
-          <div class="card-header">Your Prescriptions and Records</div>
+          <div class="card-header">Your Appointments & Prescriptions</div>
           <div class="card-body" id="recordSection">
             <p class="text-muted">Loading records...</p>
           </div>
@@ -94,74 +140,104 @@
       const supabaseKey =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkdG1td2RvcXpvb2VoeGxhd2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MDQ1NDEsImV4cCI6MjA2NDk4MDU0MX0.GVjxo02VERBIDg3clE2FHS2OLx5qP7st6J8f9Xq5M2s";
       const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
       let currentUser = null;
 
+      // Login
       document
-        .getElementById("authForm")
+        .getElementById("loginForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
-          const email = document.getElementById("email").value;
-          const password = document.getElementById("password").value;
-          const name = document.getElementById("name").value;
+          const email = document.getElementById("loginEmail").value;
+          const password = document.getElementById("loginPassword").value;
 
-          const { data: signInData, error: signInError } =
-            await supabase.auth.signInWithPassword({ email, password });
-
-          if (signInError) {
-            const { data: signUpData, error: signUpError } =
-              await supabase.auth.signUp({ email, password });
-            if (signUpError) {
-              document.getElementById("authMessage").textContent =
-                "Error: " + signUpError.message;
-              return;
-            }
-            await supabase
-              .from("patients")
-              .insert([{ id: signUpData.user.id, name }]);
-            document.getElementById("authMessage").textContent =
-              "Signed up! Please verify your email.";
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+          if (error) {
+            document.getElementById("loginMessage").textContent =
+              "Login failed: " + error.message;
           } else {
-            document.getElementById("authMessage").textContent = "Logged in!";
+            document.getElementById("loginMessage").textContent =
+              "Login successful!";
+            setTimeout(loadDashboard, 1000);
+          }
+        });
+
+      // Sign Up
+      document
+        .getElementById("signupForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const name = document.getElementById("signupName").value;
+          const email = document.getElementById("signupEmail").value;
+          const password = document.getElementById("signupPassword").value;
+
+          const { data: signUpData, error } = await supabase.auth.signUp({
+            email,
+            password,
+          });
+          if (error) {
+            document.getElementById("signupMessage").textContent =
+              "Sign-up failed: " + error.message;
+            return;
           }
 
+          await supabase
+            .from("user_data")
+            .insert([{ id: signUpData.user.id, name }]);
+          document.getElementById("signupMessage").textContent =
+            "Sign-up successful! Please verify your email.";
           setTimeout(loadDashboard, 1000);
         });
 
+      // Dashboard
       async function loadDashboard() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) return;
-
         currentUser = user;
 
         const { data: patient } = await supabase
-          .from("patients")
+          .from("user_data")
           .select("*")
           .eq("id", user.id)
           .single();
-
-        document.getElementById("authCard").style.display = "none";
+        document.getElementById("authSection").style.display = "none";
         document.getElementById("dashboard").style.display = "block";
         document.getElementById("welcomeMsg").textContent =
           "Welcome, " + patient.name;
 
-        // Load records
-        const { data: records, error } = await supabase
-          .from("records")
+        // Appointments
+        const { data: appointments } = await supabase
+          .from("appointments")
+          .select("*")
+          .eq("patient_id", user.id);
+
+        // Prescriptions
+        const { data: prescriptions } = await supabase
+          .from("prescriptions")
           .select("*")
           .eq("patient_id", user.id);
 
         const section = document.getElementById("recordSection");
-        section.innerHTML = "";
-        records.forEach((r) => {
+        section.innerHTML = "<h5>Your Appointments</h5>";
+        appointments.forEach((r) => {
           const div = document.createElement("div");
-          div.innerHTML = `<strong>${r.date}</strong>: ${r.prescription}<br>`;
+          div.innerHTML = `<strong>${r.appointment_date}</strong> at ${r.appointment_time}<br>`;
+          section.appendChild(div);
+        });
+
+        section.innerHTML += "<hr><h5>Your Prescriptions</h5>";
+        prescriptions.forEach((p) => {
+          const div = document.createElement("div");
+          div.innerHTML = `<strong>${p.date}</strong>: ${p.prescription}<br>`;
           section.appendChild(div);
         });
       }
 
+      // Book Appointment
       document
         .getElementById("bookingForm")
         .addEventListener("submit", async (e) => {
@@ -169,7 +245,6 @@
           const date = document.getElementById("appointmentDate").value;
           const time = document.getElementById("appointmentTime").value;
 
-          // Prevent conflicts
           const { data: conflict } = await supabase
             .from("appointments")
             .select("*")
@@ -190,6 +265,7 @@
           ]);
 
           alert("Appointment booked!");
+          loadDashboard(); // refresh records
         });
 
       async function logout() {
