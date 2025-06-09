@@ -8,6 +8,7 @@
       href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
       rel="stylesheet"
     />
+    <!-- Load Supabase client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   </head>
   <body>
@@ -135,11 +136,12 @@
       </div>
     </div>
 
+    <!-- Main Script -->
     <script>
       const supabaseUrl = "https://edtmmwdoqzooehxlawae.supabase.co";
       const supabaseKey =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkdG1td2RvcXpvb2VoeGxhd2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MDQ1NDEsImV4cCI6MjA2NDk4MDU0MX0.GVjxo02VERBIDg3clE2FHS2OLx5qP7st6J8f9Xq5M2s";
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabase = supabase.createClient(supabaseUrl, supabaseKey);
       let currentUser = null;
 
       // Login
@@ -149,7 +151,6 @@
           e.preventDefault();
           const email = document.getElementById("loginEmail").value;
           const password = document.getElementById("loginPassword").value;
-
           const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -172,7 +173,6 @@
           const name = document.getElementById("signupName").value;
           const email = document.getElementById("signupEmail").value;
           const password = document.getElementById("signupPassword").value;
-
           const { data: signUpData, error } = await supabase.auth.signUp({
             email,
             password,
@@ -182,7 +182,6 @@
               "Sign-up failed: " + error.message;
             return;
           }
-
           await supabase
             .from("user_data")
             .insert([{ id: signUpData.user.id, name }]);
@@ -191,14 +190,13 @@
           setTimeout(loadDashboard, 1000);
         });
 
-      // Dashboard
+      // Load Dashboard
       async function loadDashboard() {
         const {
           data: { user },
         } = await supabase.auth.getUser();
         if (!user) return;
         currentUser = user;
-
         const { data: patient } = await supabase
           .from("user_data")
           .select("*")
@@ -244,18 +242,15 @@
           e.preventDefault();
           const date = document.getElementById("appointmentDate").value;
           const time = document.getElementById("appointmentTime").value;
-
           const { data: conflict } = await supabase
             .from("appointments")
             .select("*")
             .eq("appointment_date", date)
             .eq("appointment_time", time);
-
           if (conflict.length > 0) {
             alert("Time slot already booked.");
             return;
           }
-
           await supabase.from("appointments").insert([
             {
               patient_id: currentUser.id,
@@ -263,9 +258,8 @@
               appointment_time: time,
             },
           ]);
-
           alert("Appointment booked!");
-          loadDashboard(); // refresh records
+          loadDashboard();
         });
 
       async function logout() {
