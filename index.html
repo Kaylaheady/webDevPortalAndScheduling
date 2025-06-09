@@ -186,19 +186,21 @@
             const email = document.getElementById("signupEmail").value;
             const password = document.getElementById("signupPassword").value;
 
-            const { error: signUpError } = await client.auth.signUp({
-              email,
-              password,
-            });
+            const { data: signUpData, error: signUpError } =
+              await client.auth.signUp({ email, password });
             if (signUpError) {
               document.getElementById("signupMessage").textContent =
                 "Sign-up failed: " + signUpError.message;
               return;
             }
 
-            await client
-              .from("user_id")
-              .insert([{ first_name: first, last_name: last }]);
+            await client.from("user_id").insert([
+              {
+                first_name: first,
+                last_name: last,
+                auth_id: signUpData.user.id,
+              },
+            ]);
             document.getElementById("signupMessage").textContent =
               "Sign-up successful! Please verify your email.";
             setTimeout(loadDashboard, 1000);
@@ -214,7 +216,7 @@
           const { data: patient } = await client
             .from("user_id")
             .select("*")
-            .eq("id", user.id)
+            .eq("auth_id", user.id)
             .single();
 
           document.getElementById("authSection").style.display = "none";
@@ -229,6 +231,7 @@
             .from("appointments")
             .select("*")
             .eq("patient", user.id);
+
           const { data: prescriptions } = await client
             .from("prescriptions")
             .select("*")
