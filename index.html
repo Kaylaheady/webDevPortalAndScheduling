@@ -151,8 +151,7 @@
     <script>
       window.onload = () => {
         const supabaseUrl = "https://edtmmwdoqzooehxlawae.supabase.co";
-        const supabaseKey =
-          "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkdG1td2RvcXpvb2VoeGxhd2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MDQ1NDEsImV4cCI6MjA2NDk4MDU0MX0.GVjxo02VERBIDg3clE2FHS2OLx5qP7st6J8f9Xq5M2s";
+        const supabaseKey = "YOUR_SUPABASE_ANON_KEY";
         const { createClient } = supabase;
         const client = createClient(supabaseUrl, supabaseKey);
         let currentUser = null;
@@ -196,19 +195,9 @@
               return;
             }
 
-            const { data: userData, error: getUserError } =
-              await client.auth.getUser();
-            if (getUserError || !userData?.user) {
-              document.getElementById("signupMessage").textContent =
-                "Could not fetch user ID after signup.";
-              return;
-            }
-
             await client
               .from("user_id")
-              .insert([
-                { id: userData.user.id, first_name: first, last_name: last },
-              ]);
+              .insert([{ first_name: first, last_name: last }]);
             document.getElementById("signupMessage").textContent =
               "Sign-up successful! Please verify your email.";
             setTimeout(loadDashboard, 1000);
@@ -230,7 +219,10 @@
           document.getElementById("authSection").style.display = "none";
           document.getElementById("dashboard").style.display = "block";
           document.getElementById("welcomeMsg").textContent =
-            "Welcome, " + patient.first_name + " " + patient.last_name;
+            "Welcome, " +
+            (patient?.first_name ?? "") +
+            " " +
+            (patient?.last_name ?? "");
 
           const { data: appointments } = await client
             .from("appointments")
