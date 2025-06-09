@@ -200,7 +200,7 @@
             }
 
             await client
-              .from("user_data")
+              .from("user_id")
               .insert([
                 { id: signUpData.user.id, first_name: first, last_name: last },
               ]);
@@ -217,7 +217,7 @@
           currentUser = user;
 
           const { data: patient } = await client
-            .from("user_data")
+            .from("user_id")
             .select("*")
             .eq("id", user.id)
             .single();
