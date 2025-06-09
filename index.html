@@ -148,7 +148,6 @@
       </div>
     </div>
 
-    <!-- Supabase logic -->
     <script>
       window.onload = () => {
         const supabaseUrl = "https://edtmmwdoqzooehxlawae.supabase.co";
@@ -156,7 +155,6 @@
           "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkdG1td2RvcXpvb2VoeGxhd2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MDQ1NDEsImV4cCI6MjA2NDk4MDU0MX0.GVjxo02VERBIDg3clE2FHS2OLx5qP7st6J8f9Xq5M2s";
         const { createClient } = supabase;
         const client = createClient(supabaseUrl, supabaseKey);
-
         let currentUser = null;
 
         document
@@ -165,8 +163,7 @@
             e.preventDefault();
             const email = document.getElementById("loginEmail").value;
             const password = document.getElementById("loginPassword").value;
-
-            const { data, error } = await client.auth.signInWithPassword({
+            const { error } = await client.auth.signInWithPassword({
               email,
               password,
             });
@@ -189,20 +186,28 @@
             const email = document.getElementById("signupEmail").value;
             const password = document.getElementById("signupPassword").value;
 
-            const { data: signUpData, error } = await client.auth.signUp({
+            const { error: signUpError } = await client.auth.signUp({
               email,
               password,
             });
-            if (error) {
+            if (signUpError) {
               document.getElementById("signupMessage").textContent =
-                "Sign-up failed: " + error.message;
+                "Sign-up failed: " + signUpError.message;
+              return;
+            }
+
+            const { data: userData, error: getUserError } =
+              await client.auth.getUser();
+            if (getUserError || !userData?.user) {
+              document.getElementById("signupMessage").textContent =
+                "Could not fetch user ID after signup.";
               return;
             }
 
             await client
               .from("user_id")
               .insert([
-                { id: signUpData.user.id, first_name: first, last_name: last },
+                { id: userData.user.id, first_name: first, last_name: last },
               ]);
             document.getElementById("signupMessage").textContent =
               "Sign-up successful! Please verify your email.";
@@ -221,6 +226,7 @@
             .select("*")
             .eq("id", user.id)
             .single();
+
           document.getElementById("authSection").style.display = "none";
           document.getElementById("dashboard").style.display = "block";
           document.getElementById("welcomeMsg").textContent =
@@ -265,18 +271,17 @@
               .from("appointments")
               .select("*")
               .eq("date_time", datetime);
+
             if (conflict.length > 0) {
               alert("Time slot already booked.");
               return;
             }
 
-            await client.from("appointments").insert([
-              {
-                patient: currentUser.id,
-                doctor: null,
-                date_time: datetime,
-              },
-            ]);
+            await client
+              .from("appointments")
+              .insert([
+                { patient: currentUser.id, doctor: null, date_time: datetime },
+              ]);
 
             alert("Appointment booked!");
             loadDashboard();
