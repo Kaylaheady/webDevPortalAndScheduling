@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Online Appointment and Record System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+<div class="container py-5">
+    <h2 class="mb-4 text-center">Online Appointment and Record System</h2>
+
+    <!-- Auth Section -->
+    <div class="row mb-4" id="authSection">
+        <!-- Login Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">Login</div>
+                <div class="card-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label for="loginEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="loginEmail" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="loginPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="loginPassword" required />
+                        </div>
+                        <button type="submit" class="btn btn-primary">Log In</button>
+                    </form>
+                    <div id="loginMessage" class="mt-3 text-success"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sign Up Form -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-light">Sign Up</div>
+                <div class="card-body">
+                    <form id="signupForm">
+                        <div class="mb-3">
+                            <label for="signupFirstName" class="form-label">First Name</label>
+                            <input type="text" class="form-control" id="signupFirstName" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="signupLastName" class="form-label">Last Name</label>
+                            <input type="text" class="form-control" id="signupLastName" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="signupEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="signupEmail" required />
+                        </div>
+                        <div class="mb-3">
+                            <label for="signupPassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="signupPassword" required />
+                        </div>
+                        <button type="submit" class="btn btn-success">Sign Up</button>
+                    </form>
+                    <div id="signupMessage" class="mt-3 text-success"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" style="display: none">
+        <h4 id="welcomeMsg"></h4>
+        <button class="btn btn-secondary mb-4" onclick="logout()">Log out</button>
+
+        <!-- Booking Form -->
+        <div class="card mb-4">
+            <div class="card-header">Book an Appointment</div>
+            <div class="card-body">
+                <form id="bookingForm">
+                    <div class="mb-3">
+                        <label for="appointmentDate" class="form-label">Date</label>
+                        <input type="date" class="form-control" id="appointmentDate" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="appointmentTime" class="form-label">Time</label>
+                        <input type="time" class="form-control" id="appointmentTime" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Book</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Record Viewer -->
+        <div class="card">
+            <div class="card-header">Your Appointments & Prescriptions</div>
+            <div class="card-body" id="recordSection">
+                <p class="text-muted">Loading records...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createClient } = supabase;
+    const client = createClient(
+        "https://edtmmwdoqzooehxlawae.supabase.co",
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkdG1td2RvcXpvb2VoeGxhd2FlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDk0MDQ1NDEsImV4cCI6MjA2NDk4MDU0MX0.GVjxo02VERBIDg3clE2FHS2OLx5qP7st6J8f9Xq5M2s"
+    );
+
+    let currentUser = null;
+
+    // Sign Up Workaround
+    document.getElementById("signupForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const first = document.getElementById("signupFirstName").value;
+        const last = document.getElementById("signupLastName").value;
+        const email = document.getElementById("signupEmail").value;
+        const password = document.getElementById("signupPassword").value;
+        const fakeAuthId = crypto.randomUUID();
+
+        const { error } = await client.from("user_id").insert([
+            {
+                first_name: first,
+                last_name: last,
+                email: email,
+                password: password,
+                auth_id: fakeAuthId
+            }
+        ]);
+
+        if (error) {
+            document.getElementById("signupMessage").textContent =
+                "Sign-up failed: " + error.message;
+            return;
+        }
+
+        document.getElementById("signupMessage").textContent =
+            "Sign-up successful (fake auth)!";
+
+        setTimeout(() => {
+            currentUser = { id: fakeAuthId, email: email };
+            loadDashboard();
+        }, 1000);
+    });
+
+    // Fake Login
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+
+        const { data, error } = await client
+            .from("user_id")
+            .select("*")
+            .eq("email", email)
+            .eq("password", password)
+            .single();
+
+        if (error || !data) {
+            document.getElementById("loginMessage").textContent =
+                "Login failed: incorrect email or password.";
+        } else {
+            document.getElementById("loginMessage").textContent =
+                "Login successful!";
+            currentUser = { id: data.auth_id, email: data.email };
+            setTimeout(loadDashboard, 1000);
+        }
+    });
+
+    async function loadDashboard() {
+        if (!currentUser) return;
+
+        const { data: patient } = await client
+            .from("user_id")
+            .select("*")
+            .eq("auth_id", currentUser.id)
+            .single();
+
+        document.getElementById("authSection").style.display = "none";
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("welcomeMsg").textContent =
+            "Welcome, " +
+            (patient?.first_name ?? "") +
+            " " +
+            (patient?.last_name ?? "");
+
+        const { data: appointments } = await client
+            .from("appointments")
+            .select("*")
+            .eq("patient", currentUser.id);
+
+        const { data: prescriptions } = await client
+            .from("prescriptions")
+            .select("*")
+            .eq("patient", currentUser.id);
+
+        const section = document.getElementById("recordSection");
+        section.innerHTML = "<h5>Your Appointments</h5>";
+        appointments.forEach((r) => {
+            const div = document.createElement("div");
+            div.innerHTML = `<strong>${r.date_time}</strong> (Doctor: ${
+                r.doctor ?? "N/A"
+            })<br>`;
+            section.appendChild(div);
+        });
+
+        section.innerHTML += "<hr><h5>Your Prescriptions</h5>";
+        prescriptions.forEach((p) => {
+            const div = document.createElement("div");
+            div.innerHTML = `${p.prescription}<br>`;
+            section.appendChild(div);
+        });
+    }
+
+    document.getElementById("bookingForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const date = document.getElementById("appointmentDate").value;
+        const time = document.getElementById("appointmentTime").value;
+        const datetime = `${date}T${time}`;
+
+        const { data: conflict } = await client
+            .from("appointments")
+            .select("*")
+            .eq("date_time", datetime);
+
+        if (conflict.length > 0) {
+            alert("Time slot already booked.");
+            return;
+        }
+
+        await client
+            .from("appointments")
+            .insert([
+                { patient: currentUser.id, doctor: null, date_time: datetime }
+            ]);
+
+        alert("Appointment booked!");
+        loadDashboard();
+    });
+
+    function logout() {
+        currentUser = null;
+        location.reload();
+    }
+</script>
+</body>
+</html>
