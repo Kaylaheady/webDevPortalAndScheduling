@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Submit Visit Summary</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light p-4">
+
+<div class="container">
+  <h3 class="mb-4">Doctor: Submit Visit Summary</h3>
+  <form>
+    <div class="mb-3">
+      <label for="patientSelect">Select Patient</label>
+      <select class="form-select" id="patientSelect">
+        <option>Kateryna Hrishnia</option>
+        <option>Carl Lazzeri</option>
+        <option>Kayla Heady</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="visitDate">Visit Date</label>
+      <input type="date" class="form-control" id="visitDate">
+    </div>
+
+    <div class="mb-3">
+      <label for="visitNotes">Visit Notes</label>
+      <textarea class="form-control" id="visitNotes" rows="4" placeholder="Describe patient symptoms, findings, and advice..."></textarea>
+    </div>
+
+    <div class="mb-3">
+      <label for="prescription">Prescription Given</label>
+      <input type="text" class="form-control" id="prescription" placeholder="e.g., Amoxicillin 500mg - 2x daily">
+    </div>
+
+    <button class="btn btn-primary">Submit Summary</button>
+  </form>
+</div>
+
+</body>
+</html>

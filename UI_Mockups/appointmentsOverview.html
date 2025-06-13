@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Admin Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="p-4 bg-white">
+<div class="container">
+  <h3 class="mb-4">Admin: Manage Appointments</h3>
+  <table class="table table-bordered">
+    <thead>
+    <tr>
+      <th>Patient</th>
+      <th>Doctor</th>
+      <th>Date</th>
+      <th>Time</th>
+      <th>Status</th>
+      <th>Action</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+      <td>Kayla Heady</td>
+      <td>Dr. Lee</td>
+      <td>2025-06-15</td>
+      <td>14:00</td>
+      <td><span class="badge bg-warning">Pending</span></td>
+      <td>
+        <button class="btn btn-sm btn-success">Approve</button>
+        <button class="btn btn-sm btn-danger">Cancel</button>
+      </td>
+    </tr>
+    <tr>
+      <td>Carl Lazzeri</td>
+      <td>Dr. Smith</td>
+      <td>2025-06-16</td>
+      <td>10:00</td>
+      <td><span class="badge bg-success">Approved</span></td>
+      <td><button class="btn btn-sm btn-secondary" disabled>View</button></td>
+    </tr>
+    </tbody>
+  </table>
+</div>
+</body>
+</html>
