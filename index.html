@@ -138,6 +138,24 @@
           </div>
         </div>
 
+        <!-- Prescription Upload -->
+        <div class="card mb-4">
+            <div class="card-header">Upload Prescription</div>
+            <div class="card-body">
+                <form id="uploadPrescriptionForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="prescriptionName" class="form-label">Description</label>
+                        <input type="text" class="form-control" id="prescriptionName" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="prescriptionFile" class="form-label">Select File</label>
+                        <input type="file" class="form-control" id="prescriptionFile" required />
+                    </div>
+                    <button type="submit" class="btn btn-info">Upload</button>
+                </form>
+            </div>
+        </div>
+
         <!-- Record Viewer -->
         <div class="card">
           <div class="card-header">Your Appointments & Prescriptions</div>
@@ -230,12 +248,13 @@
           const { data: appointments } = await client
             .from("appointments")
             .select("*")
-            .eq("patient", user.id);
+            .eq("patient_id", user.id);
 
           const { data: prescriptions } = await client
             .from("prescriptions")
             .select("*")
-            .eq("patient", user.id);
+            .eq("patient_id", user.id);
+
 
           const section = document.getElementById("recordSection");
           section.innerHTML = "<h5>Your Appointments</h5>";
@@ -247,12 +266,23 @@
             section.appendChild(div);
           });
 
-          section.innerHTML += "<hr><h5>Your Prescriptions</h5>";
-          prescriptions.forEach((p) => {
-            const div = document.createElement("div");
-            div.innerHTML = `${p.prescription}<br>`;
-            section.appendChild(div);
-          });
+            section.innerHTML += "<hr><h5>Your Prescriptions</h5>";
+
+            for (const p of prescriptions) {
+                const div = document.createElement("div");
+
+                if (p.file_path) {
+                    const { data: urlData, error } = await client.storage
+                        .from("prescriptions")
+                        .getPublicUrl(p.file_path);
+                    div.innerHTML = `<strong>${p.prescription_name}</strong><br>
+                    <a href="${urlData.publicUrl}" target="_blank">Download File</a><br><br>`;
+                } else {
+                    div.innerHTML = `${p.prescription_name} (no file attached)<br><br>`;
+                }
+
+                section.appendChild(div);
+            }
         }
 
         document
@@ -282,6 +312,39 @@
             alert("Appointment booked!");
             loadDashboard();
           });
+
+        document.getElementById("uploadPrescriptionForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const file = document.getElementById("prescriptionFile").files[0];
+            const name = document.getElementById("prescriptionName").value;
+
+            if (!file) return alert("No file selected.");
+
+            const filePath = `${currentUser.id}/${Date.now()}_${file.name}`;
+            const bucket = "prescriptions";
+
+            const { error: uploadError } = await client.storage
+                .from(bucket)
+                .upload(filePath, file);
+
+            if (uploadError) {
+                alert("File upload failed: " + uploadError.message);
+                return;
+            }
+
+            await client.from("prescriptions").insert([
+                {
+                    prescription_name: name,
+                    patient_id: currentUser.id,
+                    file_path: filePath
+                }
+            ]);
+
+            alert("Prescription uploaded!");
+            loadDashboard();
+        });
+
 
         window.logout = async function () {
           await client.auth.signOut();
