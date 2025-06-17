@@ -161,8 +161,12 @@
             });
 
             async function loadDashboard() {
-                const { data: { user } } = await client.auth.getUser();
-                if (!user) return;
+                const { data: { user }, error: userError } = await client.auth.getUser();
+                console.log("Auth User:", user);
+                if (!user) {
+                    console.error("No user found");
+                    return;
+                }
                 currentUser = user;
 
                 const { data: patient } = await client.from("user_id").select("*").eq("auth_id", user.id).single();
@@ -171,7 +175,15 @@
                 document.getElementById("welcomeMsg").textContent = `Welcome, ${patient?.first_name ?? ""} ${patient?.last_name ?? ""}`;
 
                 const { data: appointments } = await client.from("appointments").select("*").eq("patient_id", user.id);
-                const { data: prescriptions } = await client.from("prescriptions").select("*").eq("patient_id", user.id);
+                const { data: prescriptions, error: prescripError } = await client
+                    .from("prescriptions")
+                    .select("*")
+                    .eq("patient_id", user.id);
+
+                console.log("Prescriptions fetch result:", prescriptions);
+                if (prescripError) {
+                    console.error("Error fetching prescriptions:", prescripError.message);
+                }
 
                 const section = document.getElementById("recordSection");
                 section.innerHTML = "<h5>Your Appointments</h5>";
@@ -192,6 +204,7 @@
                     }
                     section.appendChild(div);
                 });
+
 
                 const allPrescriptionsContainer = document.getElementById("allPrescriptions");
                 allPrescriptionsContainer.innerHTML = "";
