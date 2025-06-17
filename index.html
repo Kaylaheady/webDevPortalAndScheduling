@@ -125,12 +125,48 @@
                 e.preventDefault();
                 const email = document.getElementById("loginEmail").value;
                 const password = document.getElementById("loginPassword").value;
+                const loginMsg = document.getElementById("loginMessage");
+
+                loginMsg.textContent = "Logging in...";
                 const { error } = await client.auth.signInWithPassword({ email, password });
+
                 if (error) {
-                    document.getElementById("loginMessage").textContent = "Login failed: " + error.message;
+                    loginMsg.textContent = "Login failed: " + error.message;
+                    loginMsg.classList.remove("text-success");
+                    loginMsg.classList.add("text-danger");
                 } else {
+                    loginMsg.textContent = "Login successful!";
+                    loginMsg.classList.remove("text-danger");
+                    loginMsg.classList.add("text-success");
                     setTimeout(loadDashboard, 1000);
                 }
+            });
+
+            document.getElementById("signupForm").addEventListener("submit", async (e) => {
+                e.preventDefault();
+                const first = document.getElementById("signupFirstName").value;
+                const last = document.getElementById("signupLastName").value;
+                const email = document.getElementById("signupEmail").value;
+                const password = document.getElementById("signupPassword").value;
+                const signupMsg = document.getElementById("signupMessage");
+
+                signupMsg.textContent = "Creating account...";
+                signupMsg.classList.remove("text-danger", "text-success");
+
+                const { data: signUpData, error: signUpError } = await client.auth.signUp({ email, password });
+
+                if (signUpError) {
+                    signupMsg.textContent = "Sign-up failed: " + signUpError.message;
+                    signupMsg.classList.add("text-danger");
+                    return;
+                }
+
+                await client.from("user_id").insert([{ first_name: first, last_name: last, auth_id: signUpData.user.id }]);
+
+                signupMsg.textContent = "Sign-up successful! Please verify your email.";
+                signupMsg.classList.add("text-success");
+
+                setTimeout(loadDashboard, 1000);
             });
 
             async function loadDashboard() {
@@ -170,14 +206,30 @@
                 e.preventDefault();
                 const file = document.getElementById("prescriptionFile").files[0];
                 const name = document.getElementById("prescriptionName").value;
+
                 if (!file) return alert("No file selected.");
 
                 const filePath = `${currentUser.id}/${Date.now()}_${file.name}`;
+                const messageBox = document.createElement("div");
+                messageBox.className = "mt-3";
+                const form = document.getElementById("uploadPrescriptionForm");
+                const existingMsg = form.querySelector(".upload-feedback");
+                if (existingMsg) existingMsg.remove();
+
                 const { error: uploadError } = await client.storage.from("prescriptions").upload(filePath, file);
-                if (uploadError) return alert("File upload failed: " + uploadError.message);
+                if (uploadError) {
+                    messageBox.textContent = "File upload failed: " + uploadError.message;
+                    messageBox.classList.add("text-danger", "upload-feedback");
+                    form.appendChild(messageBox);
+                    return;
+                }
 
                 await client.from("prescriptions").insert([{ prescription_name: name, patient_id: currentUser.id, file_path: filePath }]);
-                alert("Prescription uploaded!");
+
+                messageBox.textContent = "Prescription uploaded!";
+                messageBox.classList.add("text-success", "upload-feedback");
+                form.appendChild(messageBox);
+
                 loadDashboard();
             });
 
