@@ -12,8 +12,10 @@
 <body>
     <div class="container py-5">
         <h2 class="mb-4 text-center">Online Appointment and Record System</h2>
+
+        <!-- Auth Section -->
         <div class="row mb-4" id="authSection">
-            <!-- Login Form -->
+            <!-- Login -->
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header bg-light">Login</div>
@@ -33,7 +35,8 @@
                     </div>
                 </div>
             </div>
-            <!-- Sign Up Form -->
+
+            <!-- Signup -->
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header bg-light">Sign Up</div>
@@ -63,11 +66,12 @@
             </div>
         </div>
 
+        <!-- Dashboard -->
         <div id="dashboard" style="display: none">
             <h4 id="welcomeMsg"></h4>
             <button class="btn btn-secondary mb-4" onclick="logout()">Log out</button>
 
-            <!-- Booking Form -->
+            <!-- Book Appointment -->
             <div class="card mb-4">
                 <div class="card-header">Book an Appointment</div>
                 <div class="card-body">
@@ -85,7 +89,7 @@
                 </div>
             </div>
 
-            <!-- Prescription Upload -->
+            <!-- Upload Prescription -->
             <div class="card mb-4">
                 <div class="card-header">Upload Prescription</div>
                 <div class="card-body">
@@ -103,16 +107,16 @@
                 </div>
             </div>
 
-            <!-- Record Viewer -->
-            <div class="card">
+            <!-- Appointments and Prescriptions -->
+            <div class="card mb-4">
                 <div class="card-header">Your Appointments & Prescriptions</div>
                 <div class="card-body" id="recordSection">
                     <p class="text-muted">Loading records...</p>
                 </div>
             </div>
 
-            <!-- All Prescriptions Section -->
-            <div class="card mt-4">
+            <!-- All Prescriptions -->
+            <div class="card">
                 <div class="card-header">All Your Prescriptions</div>
                 <div class="card-body" id="allPrescriptions">
                     <p class="text-muted">Loading your prescription files...</p>
@@ -161,50 +165,42 @@
             });
 
             async function loadDashboard() {
-                const { data: { user }, error: userError } = await client.auth.getUser();
-                console.log("Auth User:", user);
-                if (!user) {
-                    console.error("No user found");
-                    return;
-                }
+                const { data: { user } } = await client.auth.getUser();
+                if (!user) return;
                 currentUser = user;
 
-                const { data: patient } = await client.from("user_id").select("*").eq("auth_id", user.id).single();
+                const { data: patient } = await client.from("user_id").select("*").eq("auth_id", user.id).maybeSingle();
+
                 document.getElementById("authSection").style.display = "none";
                 document.getElementById("dashboard").style.display = "block";
                 document.getElementById("welcomeMsg").textContent = `Welcome, ${patient?.first_name ?? ""} ${patient?.last_name ?? ""}`;
 
                 const { data: appointments } = await client.from("appointments").select("*").eq("patient_id", user.id);
-                const { data: prescriptions, error: prescripError } = await client
-                    .from("prescriptions")
-                    .select("*")
-                    .eq("patient_id", user.id);
-
-                console.log("Prescriptions fetch result:", prescriptions);
-                if (prescripError) {
-                    console.error("Error fetching prescriptions:", prescripError.message);
-                }
+                const { data: prescriptions } = await client.from("prescriptions").select("*").eq("patient_id", user.id);
 
                 const section = document.getElementById("recordSection");
                 section.innerHTML = "<h5>Your Appointments</h5>";
-                appointments.forEach((r) => {
-                    const div = document.createElement("div");
-                    div.innerHTML = `<strong>${r.date_time}</strong> (Doctor: ${r.doctor ?? "N/A"})<br>`;
-                    section.appendChild(div);
-                });
+                if (appointments && appointments.length > 0) {
+                    appointments.forEach((r) => {
+                        const div = document.createElement("div");
+                        div.innerHTML = `<strong>${r.date_time}</strong> (Doctor: ${r.doctor ?? "N/A"})<br>`;
+                        section.appendChild(div);
+                    });
+                } else {
+                    section.innerHTML += "<p>No appointments found.</p>";
+                }
 
                 section.innerHTML += "<hr><h5>Your Prescriptions</h5>";
-                prescriptions.forEach((p) => {
-                    const div = document.createElement("div");
-                    if (p.file_path) {
+                if (prescriptions && prescriptions.length > 0) {
+                    prescriptions.forEach((p) => {
+                        const div = document.createElement("div");
                         const publicUrl = client.storage.from("prescriptions").getPublicUrl(p.file_path).data.publicUrl;
                         div.innerHTML = `<strong>${p.prescription_name}</strong><br><a href="${publicUrl}" target="_blank">Download File</a><br><br>`;
-                    } else {
-                        div.innerHTML = `${p.prescription_name} (no file attached)<br><br>`;
-                    }
-                    section.appendChild(div);
-                });
-
+                        section.appendChild(div);
+                    });
+                } else {
+                    section.innerHTML += "<p>No prescriptions found.</p>";
+                }
 
                 const allPrescriptionsContainer = document.getElementById("allPrescriptions");
                 allPrescriptionsContainer.innerHTML = "";
@@ -257,4 +253,5 @@
         };
     </script>
 </body>
+
 </html>
