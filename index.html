@@ -12,10 +12,8 @@
 <body>
     <div class="container py-5">
         <h2 class="mb-4 text-center">Online Appointment and Record System</h2>
-
-        <!-- Auth Section -->
         <div class="row mb-4" id="authSection">
-            <!-- Login -->
+            <!-- Login Form -->
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header bg-light">Login</div>
@@ -35,8 +33,7 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Signup -->
+            <!-- Sign Up Form -->
             <div class="col-md-6">
                 <div class="card">
                     <div class="card-header bg-light">Sign Up</div>
@@ -66,12 +63,11 @@
             </div>
         </div>
 
-        <!-- Dashboard -->
         <div id="dashboard" style="display: none">
             <h4 id="welcomeMsg"></h4>
             <button class="btn btn-secondary mb-4" onclick="logout()">Log out</button>
 
-            <!-- Book Appointment -->
+            <!-- Booking Form -->
             <div class="card mb-4">
                 <div class="card-header">Book an Appointment</div>
                 <div class="card-body">
@@ -89,7 +85,7 @@
                 </div>
             </div>
 
-            <!-- Upload Prescription -->
+            <!-- Prescription Upload -->
             <div class="card mb-4">
                 <div class="card-header">Upload Prescription</div>
                 <div class="card-body">
@@ -107,16 +103,8 @@
                 </div>
             </div>
 
-            <!-- Appointments and Prescriptions -->
-            <div class="card mb-4">
-                <div class="card-header">Your Appointments & Prescriptions</div>
-                <div class="card-body" id="recordSection">
-                    <p class="text-muted">Loading records...</p>
-                </div>
-            </div>
-
-            <!-- All Prescriptions -->
-            <div class="card">
+            <!-- Prescription Viewer -->
+            <div class="card mt-4">
                 <div class="card-header">All Your Prescriptions</div>
                 <div class="card-body" id="allPrescriptions">
                     <p class="text-muted">Loading your prescription files...</p>
@@ -141,27 +129,8 @@
                 if (error) {
                     document.getElementById("loginMessage").textContent = "Login failed: " + error.message;
                 } else {
-                    document.getElementById("loginMessage").textContent = "Login successful!";
                     setTimeout(loadDashboard, 1000);
                 }
-            });
-
-            document.getElementById("signupForm").addEventListener("submit", async (e) => {
-                e.preventDefault();
-                const first = document.getElementById("signupFirstName").value;
-                const last = document.getElementById("signupLastName").value;
-                const email = document.getElementById("signupEmail").value;
-                const password = document.getElementById("signupPassword").value;
-
-                const { data: signUpData, error: signUpError } = await client.auth.signUp({ email, password });
-                if (signUpError) {
-                    document.getElementById("signupMessage").textContent = "Sign-up failed: " + signUpError.message;
-                    return;
-                }
-
-                await client.from("user_id").insert([{ first_name: first, last_name: last, auth_id: signUpData.user.id }]);
-                document.getElementById("signupMessage").textContent = "Sign-up successful! Please verify your email.";
-                setTimeout(loadDashboard, 1000);
             });
 
             async function loadDashboard() {
@@ -169,66 +138,33 @@
                 if (!user) return;
                 currentUser = user;
 
-                const { data: patient } = await client.from("user_id").select("*").eq("auth_id", user.id).maybeSingle();
-
                 document.getElementById("authSection").style.display = "none";
                 document.getElementById("dashboard").style.display = "block";
-                document.getElementById("welcomeMsg").textContent = `Welcome, ${patient?.first_name ?? ""} ${patient?.last_name ?? ""}`;
 
-                const { data: appointments } = await client.from("appointments").select("*").eq("patient_id", user.id);
-                const { data: prescriptions } = await client.from("prescriptions").select("*").eq("patient_id", user.id);
+                const { data: prescriptions } = await client
+                    .from("prescriptions")
+                    .select("*")
+                    .eq("patient_id", user.id);
 
-                const section = document.getElementById("recordSection");
-                section.innerHTML = "<h5>Your Appointments</h5>";
-                if (appointments && appointments.length > 0) {
-                    appointments.forEach((r) => {
-                        const div = document.createElement("div");
-                        div.innerHTML = `<strong>${r.date_time}</strong> (Doctor: ${r.doctor ?? "N/A"})<br>`;
-                        section.appendChild(div);
-                    });
-                } else {
-                    section.innerHTML += "<p>No appointments found.</p>";
-                }
+                const container = document.getElementById("allPrescriptions");
+                container.innerHTML = "";
 
-                section.innerHTML += "<hr><h5>Your Prescriptions</h5>";
-                if (prescriptions && prescriptions.length > 0) {
-                    prescriptions.forEach((p) => {
-                        const div = document.createElement("div");
-                        const publicUrl = client.storage.from("prescriptions").getPublicUrl(p.file_path).data.publicUrl;
-                        div.innerHTML = `<strong>${p.prescription_name}</strong><br><a href="${publicUrl}" target="_blank">Download File</a><br><br>`;
-                        section.appendChild(div);
-                    });
-                } else {
-                    section.innerHTML += "<p>No prescriptions found.</p>";
-                }
-
-                const allPrescriptionsContainer = document.getElementById("allPrescriptions");
-                allPrescriptionsContainer.innerHTML = "";
                 if (!prescriptions || prescriptions.length === 0) {
-                    allPrescriptionsContainer.innerHTML = "<p>No prescriptions found.</p>";
+                    container.innerHTML = "<p>No prescriptions found.</p>";
                 } else {
-                    prescriptions.forEach((p) => {
+                    for (const p of prescriptions) {
+                        const { data: signedData, error } = await client.storage
+                            .from("prescriptions")
+                            .createSignedUrl(p.file_path, 60);
+
                         const div = document.createElement("div");
-                        const publicUrl = client.storage.from("prescriptions").getPublicUrl(p.file_path).data.publicUrl;
-                        const fileLink = publicUrl ? `<a href="${publicUrl}" target="_blank">${p.prescription_name}</a>` : "No file available";
+                        const fileLink = signedData?.signedUrl ? `<a href="${signedData.signedUrl}" target="_blank">${p.prescription_name}</a>` : "(file not available)";
                         const date = new Date(p.created_at).toLocaleString();
                         div.innerHTML = `<div class="mb-3">${fileLink}<br/><small class="text-muted">Uploaded on ${date}</small></div>`;
-                        allPrescriptionsContainer.appendChild(div);
-                    });
+                        container.appendChild(div);
+                    }
                 }
             }
-
-            document.getElementById("bookingForm").addEventListener("submit", async (e) => {
-                e.preventDefault();
-                const date = document.getElementById("appointmentDate").value;
-                const time = document.getElementById("appointmentTime").value;
-                const datetime = `${date}T${time}`;
-                const { data: conflict } = await client.from("appointments").select("*").eq("date_time", datetime);
-                if (conflict.length > 0) return alert("Time slot already booked.");
-                await client.from("appointments").insert([{ patient_id: currentUser.id, doctor: null, date_time: datetime }]);
-                alert("Appointment booked!");
-                loadDashboard();
-            });
 
             document.getElementById("uploadPrescriptionForm").addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -237,8 +173,7 @@
                 if (!file) return alert("No file selected.");
 
                 const filePath = `${currentUser.id}/${Date.now()}_${file.name}`;
-                const bucket = "prescriptions";
-                const { error: uploadError } = await client.storage.from(bucket).upload(filePath, file);
+                const { error: uploadError } = await client.storage.from("prescriptions").upload(filePath, file);
                 if (uploadError) return alert("File upload failed: " + uploadError.message);
 
                 await client.from("prescriptions").insert([{ prescription_name: name, patient_id: currentUser.id, file_path: filePath }]);
