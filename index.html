@@ -179,7 +179,7 @@
                 document.getElementById("dashboard").style.display = "block";
 
                 const docSelect = document.getElementById("appointmentDoctor");
-                const { data: doctors } = await client.from("doctor").select("*");
+                const { data: doctors } = await client.from("doctor_data").select("*");
                 docSelect.innerHTML = "";
                 doctors.forEach(d => {
                     const opt = document.createElement("option");
