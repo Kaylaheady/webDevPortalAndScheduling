@@ -233,9 +233,20 @@
                     msg.className = "text-danger";
                     return;
                 }
-                await client.from("appointments").insert([{ patient: currentUser.id, doctor, date_time: datetime }]);
+                const { error: insertError } = await client
+                    .from("appointments")
+                    .insert([{ patient: currentUser.id, doctor, date_time: datetime }]);
+
+                if (insertError) {
+                    console.error("Appointment insert error:", insertError);
+                    msg.textContent = "Failed to book appointment: " + insertError.message;
+                    msg.className = "text-danger";
+                    return;
+                }
                 msg.textContent = "Appointment booked!";
                 msg.className = "text-success";
+                loadDashboard();
+;
                 loadDashboard();
             });
 
