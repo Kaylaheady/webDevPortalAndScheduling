@@ -1,0 +1,7 @@
+id,created_at,first_name,last_name,email,auth_id,password
+16839b8d-7a4f-476c-9d76-3e8594190ecf,2025-06-08 18:31:18.731992+00,Burt,Reynolds,burt@fsu.edu,null,null
+d049153a-f2ca-4373-8d64-76748459c76b,2025-06-08 18:35:47.145277+00,Jordan,Travis,jtrav@fsu.edu,null,null
+299d25b2-d6e7-4a4d-86e5-b2d86970d392,2025-06-17 21:48:04.682071+00,Carl,Lazzeri,null,66e951a9-a511-43e7-9ea9-b59c1e877d1a,null
+fa311cb7-91b1-4962-a012-f61b4f098986,2025-06-09 23:57:07.076529+00,Bob,Jones,bobjones@gmail.com,null,test123
+e22f0dcb-da08-4b99-a2cb-9cd9ccaa0fe1,2025-06-17 22:39:42.861611+00,test,tester,null,0bfc9d0b-58a7-439b-b47a-27cf8ab1df5e,null
+8be6d5fb-ee73-4ccc-9843-d5c8f4882315,2025-06-20 19:53:18.68435+00,Vlad,Hrishina,null,72cc7b03-859f-471e-90e8-88535f90884c,null
