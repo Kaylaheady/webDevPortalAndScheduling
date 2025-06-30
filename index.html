@@ -123,6 +123,25 @@
                     <p class="text-muted">Loading your appointment records...</p>
                 </div>
             </div>
+
+            <!-- Admin Section -->
+            <div id="adminSection" style="display: none;">
+                <h4 class="mt-4">Admin Dashboard</h4>
+            
+                <div class="card mb-3">
+                    <div class="card-header">All Appointments</div>
+                    <div class="card-body" id="adminAppointments">
+                        <p class="text-muted">Loading all appointment records...</p>
+                    </div>
+                </div>
+            
+                <div class="card mb-3">
+                    <div class="card-header">Manage Users</div>
+                    <div class="card-body" id="adminUsers">
+                        <p class="text-muted">Loading users...</p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -178,6 +197,17 @@
                 document.getElementById("authSection").style.display = "none";
                 document.getElementById("dashboard").style.display = "block";
 
+                const { data: doctorCheck } = await client
+                    .from("doctor_data")
+                    .select("id")
+                    .eq("id", user.id)
+                    .single();
+
+                const isDoctor = !!doctorCheck;
+                if (isDoctor) {
+                    document.getElementById("adminSection").style.display = "block";
+                    loadAdminDashboard();
+                }
                 const docSelect = document.getElementById("appointmentDoctor");
                 const { data: doctors } = await client.from("doctor_data").select("*");
                 docSelect.innerHTML = "";
@@ -218,6 +248,22 @@
                         appointmentDiv.appendChild(div);
                     }
                 }
+            }
+
+            async function loadAdminDashboard() {
+                const { data: appointments } = await client.from("appointments").select("*");
+                const { data: users } = await client.from("user_id").select("first_name, last_name");
+
+                const apptDiv = document.getElementById("adminAppointments");
+                apptDiv.innerHTML = appointments.map(appt => {
+                    const date = new Date(appt.date_time).toLocaleString();
+                    return `<div><strong>${date}</strong> | Patient ID: ${appt.patient} | Doctor ID: ${appt.doctor}</div>`;
+                }).join("") || "<p>No appointments found.</p>";
+
+                const userDiv = document.getElementById("adminUsers");
+                userDiv.innerHTML = users.map(u => {
+                    return `<div>${u.first_name} ${u.last_name}</div>`;
+                }).join("") || "<p>No users found.</p>";
             }
 
             document.getElementById("bookingForm").addEventListener("submit", async (e) => {
