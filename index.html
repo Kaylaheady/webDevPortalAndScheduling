@@ -147,7 +147,7 @@
     <script>
         window.onload = () => {
             const supabaseUrl = "https://edtmmwdoqzooehxlawae.supabase.co";
-            const supabaseKey = "your-service-role-key-here";
+            const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkdG1td2RvcXpvb2VoeGxhd2FlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTQwNDU0MSwiZXhwIjoyMDY0OTgwNTQxfQ.UFXAqw_7aHj6aqnwvkPrKAhfM6zt7rAKtYFWzGCtLPc";
             const { createClient } = supabase;
             const client = createClient(supabaseUrl, supabaseKey);
             let currentUser = null;
