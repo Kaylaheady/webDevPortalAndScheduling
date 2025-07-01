@@ -330,6 +330,10 @@
         await client.auth.signOut();
         location.reload();
       };
+      window.removeUser = removeUser;
+      window.promoteToDoctor = promoteToDoctor;
+      window.addToUserTable = addToUserTable;
+      window.deleteAuthUser = deleteAuthUser;
     };
   </script>
 </body>
