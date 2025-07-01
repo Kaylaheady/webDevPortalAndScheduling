@@ -275,10 +275,33 @@
 
       async function promoteToDoctor(userId, firstName, lastName) {
         if (confirm(`Promote ${firstName} ${lastName} to doctor?`)) {
-          await client.from("doctor_data").insert([{ id: userId, first_name: firstName, last_name: lastName }]);
-          loadAdminDashboard();
-        }
-      }
+
+          const { data: existingDoctor, error: selectError } = await client
+            .from("doctor_data")
+            .select("id")
+            .eq("id", userId)
+            .maybeSingle();
+      
+          if (selectError) {
+            alert("Error checking doctor existence: " + selectError.message);
+            return;
+          }
+      
+          if (existingDoctor) {
+            alert("This user is already a doctor.");
+            return;
+          }
+    
+          const { error: insertError } = await client
+            .from("doctor_data")
+            .insert([{ id: userId, first_name: firstName, last_name: lastName }]);
+      
+          if (insertError) {
+            alert("Failed to promote to doctor: " + insertError.message);
+          } else {
+            alert(`${firstName} has been promoted to doctor.`);
+            loadAdminDashboard();
+
 
       async function addToUserTable(authId, email) {
         const nameParts = email.split("@")[0].split(".");
