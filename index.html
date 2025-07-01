@@ -301,8 +301,9 @@
           } else {
             alert(`${firstName} has been promoted to doctor.`);
             loadAdminDashboard();
-
-
+          }
+        }
+      }
       async function addToUserTable(authId, email) {
         const nameParts = email.split("@")[0].split(".");
         const first = nameParts[0] || "First";
