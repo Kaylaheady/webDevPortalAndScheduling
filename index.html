@@ -33,7 +33,6 @@
                     </div>
                 </div>
             </div>
-
             <!-- Sign Up Form -->
             <div class="col-md-6">
                 <div class="card">
@@ -64,12 +63,12 @@
             </div>
         </div>
 
-        <div id="dashboard" style="display: none;">
-            <h4 id="welcomeMsg" class="mb-4"></h4>
+        <div id="dashboard" style="display: none">
+            <h4 id="welcomeMsg"></h4>
             <button class="btn btn-secondary mb-4" onclick="logout()">Log out</button>
 
             <!-- Booking Form -->
-            <div class="card mb-4" id="bookingFormCard">
+            <div class="card mb-4">
                 <div class="card-header">Book an Appointment</div>
                 <div class="card-body">
                     <form id="bookingForm">
@@ -92,7 +91,7 @@
             </div>
 
             <!-- Prescription Upload -->
-            <div class="card mb-4" id="prescriptionUploadCard">
+            <div class="card mb-4">
                 <div class="card-header">Upload Prescription</div>
                 <div class="card-body">
                     <form id="uploadPrescriptionForm" enctype="multipart/form-data">
@@ -110,17 +109,17 @@
             </div>
 
             <!-- Prescription Viewer -->
-            <div class="card mt-4" id="allPrescriptions">
+            <div class="card mt-4">
                 <div class="card-header">All Your Prescriptions</div>
-                <div class="card-body">
+                <div class="card-body" id="allPrescriptions">
                     <p class="text-muted">Loading your prescription files...</p>
                 </div>
             </div>
 
             <!-- Appointment Viewer -->
-            <div class="card mt-4" id="appointmentRecords">
+            <div class="card mt-4">
                 <div class="card-header">Your Appointments</div>
-                <div class="card-body">
+                <div class="card-body" id="appointmentRecords">
                     <p class="text-muted">Loading your appointment records...</p>
                 </div>
             </div>
@@ -128,16 +127,25 @@
             <!-- Admin Section -->
             <div id="adminSection" style="display: none;">
                 <h4 class="mt-4">Admin Dashboard</h4>
+
                 <div class="card mb-3">
                     <div class="card-header">All Appointments</div>
                     <div class="card-body" id="adminAppointments">
                         <p class="text-muted">Loading all appointment records...</p>
                     </div>
                 </div>
+
                 <div class="card mb-3">
                     <div class="card-header">Manage Users</div>
                     <div class="card-body" id="adminUsers">
                         <p class="text-muted">Loading users...</p>
+                    </div>
+                </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">Auth Users (Unregistered)</div>
+                    <div class="card-body" id="authUsers">
+                        <p class="text-muted">Loading auth users...</p>
                     </div>
                 </div>
             </div>
@@ -184,7 +192,7 @@
                     return;
                 }
                 await client.from("user_id").insert([{ first_name: first, last_name: last, auth_id: signUpData.user.id }]);
-                signupMsg.textContent = "Sign-up successful!";
+                signupMsg.textContent = "Sign-up successful! Please verify your email.";
                 signupMsg.classList.add("text-success");
                 setTimeout(loadDashboard, 1000);
             });
@@ -196,65 +204,89 @@
                 document.getElementById("authSection").style.display = "none";
                 document.getElementById("dashboard").style.display = "block";
 
-                const { data: doctorCheck } = await client.from("doctor_data").select("*").eq("id", user.id).single();
-                const isDoctor = !!doctorCheck;
+                const { data: doctorCheck } = await client
+                    .from("doctor_data")
+                    .select("id")
+                    .eq("id", user.id)
+                    .single();
 
-                const welcomeMsg = document.getElementById("welcomeMsg");
+                const isDoctor = !!doctorCheck;
                 if (isDoctor) {
-                    welcomeMsg.textContent = `Welcome Dr. ${doctorCheck.first_name} ${doctorCheck.last_name}`;
                     document.getElementById("adminSection").style.display = "block";
                     loadAdminDashboard();
-                    document.getElementById("bookingFormCard").style.display = "none";
-                    document.getElementById("prescriptionUploadCard").style.display = "none";
-                    document.getElementById("allPrescriptions").style.display = "none";
-                    document.getElementById("appointmentRecords").style.display = "none";
-                } else {
-                    welcomeMsg.textContent = `Welcome back!`;
                 }
-
                 const docSelect = document.getElementById("appointmentDoctor");
                 const { data: doctors } = await client.from("doctor_data").select("*");
                 docSelect.innerHTML = "";
                 doctors.forEach(d => {
                     const opt = document.createElement("option");
                     opt.value = d.id;
-                    opt.textContent = `${d.first_name} ${d.last_name}`;
+                    opt.textContent = ${d.first_name} ${d.last_name};
                     docSelect.appendChild(opt);
                 });
 
                 const { data: prescriptions } = await client.from("prescriptions").select("*").eq("patient_id", user.id);
-                const container = document.getElementById("allPrescriptions").querySelector(".card-body");
-                container.innerHTML = prescriptions.length === 0 ? "<p>No prescriptions found.</p>" : "";
-                for (const p of prescriptions) {
-                    const { data: signedData } = await client.storage.from("prescriptions").createSignedUrl(p.file_path, 60);
-                    const div = document.createElement("div");
-                    div.innerHTML = `<a href="${signedData.signedUrl}" target="_blank">${p.prescription_name}</a><br/><small class="text-muted">Uploaded on ${new Date(p.created_at).toLocaleString()}</small>`;
-                    container.appendChild(div);
+                const container = document.getElementById("allPrescriptions");
+                container.innerHTML = "";
+                if (!prescriptions || prescriptions.length === 0) {
+                    container.innerHTML = "<p>No prescriptions found.</p>";
+                } else {
+                    for (const p of prescriptions) {
+                        const { data: signedData } = await client.storage.from("prescriptions").createSignedUrl(p.file_path, 60);
+                        const div = document.createElement("div");
+                        const fileLink = signedData?.signedUrl ? <a href="${signedData.signedUrl}" target="_blank">${p.prescription_name}</a> : "(file not available)";
+                        const date = new Date(p.created_at).toLocaleString();
+                        div.innerHTML = <div class="mb-3">${fileLink}<br/><small class="text-muted">Uploaded on ${date}</small></div>;
+                        container.appendChild(div);
+                    }
                 }
 
                 const { data: appointments } = await client.from("appointments").select("*").eq("patient", user.id);
-                const appointmentDiv = document.getElementById("appointmentRecords").querySelector(".card-body");
-                appointmentDiv.innerHTML = appointments.length === 0 ? "<p>No appointments found.</p>" : "";
-                for (const a of appointments) {
-                    const doc = doctors.find(d => d.id === a.doctor);
-                    appointmentDiv.innerHTML += `<div><strong>${new Date(a.date_time).toLocaleString()}</strong> with ${doc ? doc.first_name + " " + doc.last_name : 'Unknown Doctor'}</div>`;
+                const appointmentDiv = document.getElementById("appointmentRecords");
+                appointmentDiv.innerHTML = "";
+                if (!appointments || appointments.length === 0) {
+                    appointmentDiv.innerHTML = "<p>No appointments found.</p>";
+                } else {
+                    for (const a of appointments) {
+                        const doc = doctors.find(d => d.id === a.doctor);
+                        const date = new Date(a.date_time).toLocaleString();
+                        const div = document.createElement("div");
+                        div.innerHTML = <strong>${date}</strong> with ${doc ? ${doc.first_name} ${doc.last_name} : 'Unknown Doctor'};
+                        appointmentDiv.appendChild(div);
+                    }
                 }
             }
 
             async function loadAdminDashboard() {
                 const { data: appointments } = await client.from("appointments").select("*");
-                const { data: users } = await client.from("user_id").select("first_name, last_name");
+                const { data: users } = await client.from("user_id").select("*");
+                const { data: doctors } = await client.from("doctor_data").select("*");
+
                 const apptDiv = document.getElementById("adminAppointments");
                 const userDiv = document.getElementById("adminUsers");
+                const authUserDiv = document.getElementById("authUsers");
 
-                apptDiv.innerHTML = appointments.map(a => {
-                    const date = new Date(a.date_time).toLocaleString();
-                    return `<div><strong>${date}</strong> | Patient ID: ${a.patient} | Doctor ID: ${a.doctor}</div>`;
-                }).join("") || "<p>No appointments found.</p>";
+                userDiv.innerHTML = users.map(u => 
+                    <div>
+                        ${u.first_name} ${u.last_name}
+                        <button class="btn btn-sm btn-danger" onclick="removeUser('${u.id}')">Delete</button>
+                        <button class="btn btn-sm btn-secondary" onclick="promoteToDoctor('${u.id}', '${u.first_name}', '${u.last_name}')">Promote to Doctor</button>
+                    </div>
+                ).join("") || "<p>No users found.</p>";
 
-                userDiv.innerHTML = users.map(u => {
-                    return `<div>${u.first_name} ${u.last_name}</div>`;
-                }).join("") || "<p>No users found.</p>";
+                const { data: authList } = await client.auth.admin.listUsers();
+                const userIds = users.map(u => u.auth_id);
+
+                authUserDiv.innerHTML = authList.users.map(u => {
+                    const isRegistered = userIds.includes(u.id);
+                    return 
+                        <div>
+                            ${u.email}
+                            <button class="btn btn-sm btn-danger" onclick="deleteAuthUser('${u.id}')">Delete Auth</button>
+                            ${!isRegistered ? <button class="btn btn-sm btn-primary" onclick="addToUserTable('${u.id}', '${u.email}')">Add to user_id</button> : ''}
+                        </div>
+                    ;
+                }).join("") || "<p>No authenticated users found.</p>";
             }
 
             document.getElementById("bookingForm").addEventListener("submit", async (e) => {
@@ -262,7 +294,7 @@
                 const date = document.getElementById("appointmentDate").value;
                 const time = document.getElementById("appointmentTime").value;
                 const doctor = document.getElementById("appointmentDoctor").value;
-                const datetime = `${date}T${time}`;
+                const datetime = ${date}T${time};
                 const msg = document.getElementById("bookingMessage");
                 const { data: conflict } = await client.from("appointments").select("*").eq("date_time", datetime);
                 if (conflict.length > 0) {
@@ -270,10 +302,19 @@
                     msg.className = "text-danger";
                     return;
                 }
-                const { error } = await client.from("appointments").insert([{ patient: currentUser.id, doctor, date_time: datetime }]);
-                msg.textContent = error ? "Booking failed: " + error.message : "Appointment booked!";
-                msg.className = error ? "text-danger" : "text-success";
-                if (!error) loadDashboard();
+                const { error: insertError } = await client
+                    .from("appointments")
+                    .insert([{ patient: currentUser.id, doctor, date_time: datetime }]);
+
+                if (insertError) {
+                    console.error("Appointment insert error:", insertError);
+                    msg.textContent = "Failed to book appointment: " + insertError.message;
+                    msg.className = "text-danger";
+                    return;
+                }
+                msg.textContent = "Appointment booked!";
+                msg.className = "text-success";
+                loadDashboard();
             });
 
             document.getElementById("uploadPrescriptionForm").addEventListener("submit", async (e) => {
@@ -281,15 +322,55 @@
                 const file = document.getElementById("prescriptionFile").files[0];
                 const name = document.getElementById("prescriptionName").value;
                 if (!file) return alert("No file selected.");
-                const filePath = `${currentUser.id}/${Date.now()}_${file.name}`;
+                const filePath = ${currentUser.id}/${Date.now()}_${file.name};
+                const messageBox = document.createElement("div");
+                messageBox.className = "mt-3";
+                const form = document.getElementById("uploadPrescriptionForm");
+                const existingMsg = form.querySelector(".upload-feedback");
+                if (existingMsg) existingMsg.remove();
                 const { error: uploadError } = await client.storage.from("prescriptions").upload(filePath, file);
                 if (uploadError) {
-                    alert("Upload failed: " + uploadError.message);
+                    messageBox.textContent = "File upload failed: " + uploadError.message;
+                    messageBox.classList.add("text-danger", "upload-feedback");
+                    form.appendChild(messageBox);
                     return;
                 }
                 await client.from("prescriptions").insert([{ prescription_name: name, patient_id: currentUser.id, file_path: filePath }]);
+                messageBox.textContent = "Prescription uploaded!";
+                messageBox.classList.add("text-success", "upload-feedback");
+                form.appendChild(messageBox);
                 loadDashboard();
             });
+            
+            async function removeUser(userId) {
+                if (!confirm("Delete this user from user_id?")) return;
+                const { error } = await client.from("user_id").delete().eq("id", userId);
+                if (error) alert("Error deleting user: " + error.message);
+                else loadAdminDashboard();
+            }
+
+            async function promoteToDoctor(userId, firstName, lastName) {
+                if (!confirm(Promote ${firstName} ${lastName} to doctor?)) return;
+                const { error } = await client.from("doctor_data").insert([{ id: userId, first_name: firstName, last_name: lastName }]);
+                if (error) alert("Promotion failed: " + error.message);
+                else loadAdminDashboard();
+            }
+
+            async function addToUserTable(authId, email) {
+                const nameParts = email.split("@")[0].split(".");
+                const first = nameParts[0] || "First";
+                const last = nameParts[1] || "Last";
+                const { error } = await client.from("user_id").insert([{ auth_id: authId, first_name: first, last_name: last, email }]);
+                if (error) alert("Failed to add user: " + error.message);
+                else loadAdminDashboard();
+            }
+
+            async function deleteAuthUser(uid) {
+                if (!confirm("This will fully remove the user from your app and require re-registration. Proceed?")) return;
+                const { error } = await client.auth.admin.deleteUser(uid);
+                if (error) alert("Failed to delete auth user: " + error.message);
+                else loadAdminDashboard();
+            }
 
             window.logout = async function () {
                 await client.auth.signOut();
