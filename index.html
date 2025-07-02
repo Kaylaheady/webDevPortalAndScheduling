@@ -193,6 +193,10 @@
         if (!user) return;
         currentUser = user;
       
+        // FIX: Show dashboard and hide login/signup
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("authSection").style.display = "none";
+      
         const { data: userRow, error: userError } = await client
           .from("user_id")
           .select("id")
