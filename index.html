@@ -246,7 +246,7 @@
           <div>
             ${u.first_name} ${u.last_name}
             <button class="btn btn-sm btn-danger" onclick="removeUser('${u.id}')">Delete</button>
-            <button class="btn btn-sm btn-secondary" onclick="promoteToDoctor('${u.id}', '${u.first_name}', '${u.last_name}')">Promote to Doctor</button>
+            <button class="btn btn-sm btn-secondary" onclick="promoteToDoctor('${u.auth_id}', '${u.first_name}', '${u.last_name}')">Promote to Doctor</button>
           </div>
         `).join("");
 
