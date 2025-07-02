@@ -279,6 +279,7 @@
           .select("id")
           .eq("auth_id", authId)
           .maybeSingle();
+          console.log("Resolved user_id.id:", userRow?.id);
       
         if (userError || !userRow) {
           alert("User not found in Manage Users (user_id). Cannot promote.");
