@@ -192,16 +192,34 @@
         const { data: { user } } = await client.auth.getUser();
         if (!user) return;
         currentUser = user;
-        document.getElementById("authSection").style.display = "none";
-        document.getElementById("dashboard").style.display = "block";
-
-        const { data: doctorCheck } = await client.from("doctor_data").select("id").eq("id", user.id).single();
+      
+        // Step 1: Get user_id.id using auth_id
+        const { data: userRow, error: userError } = await client
+          .from("user_id")
+          .select("id")
+          .eq("auth_id", user.id)
+          .maybeSingle();
+      
+        if (userError || !userRow?.id) {
+          console.warn("User ID not found in user_id table");
+          return;
+        }
+      
+        const userId = userRow.id;
+      
+        // Step 2: Check if user is a doctor by using user_id.id
+        const { data: doctorCheck } = await client
+          .from("doctor_data")
+          .select("id")
+          .eq("id", userId)
+          .maybeSingle();
+      
         const isDoctor = !!doctorCheck;
         if (isDoctor) {
           document.getElementById("adminSection").style.display = "block";
           loadAdminDashboard();
         }
-
+        
         const { data: doctors } = await client.from("doctor_data").select("*");
         const docSelect = document.getElementById("appointmentDoctor");
         docSelect.innerHTML = "";
