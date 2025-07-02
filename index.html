@@ -210,9 +210,6 @@
           .select("id")
           .eq("id", userId)
           .maybeSingle();
-        
-        const isDoctor = !!doctorCheck;
-
         console.log("Doctor check:", doctorCheck);
         console.log("Error:", docErr);
       
