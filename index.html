@@ -273,37 +273,43 @@
         }
       }
 
-      async function promoteToDoctor(userId, firstName, lastName) {
-        if (confirm(`Promote ${firstName} ${lastName} to doctor?`)) {
-
-          const { data: existingDoctor, error: selectError } = await client
-            .from("doctor_data")
-            .select("id")
-            .eq("id", userId)
-            .maybeSingle();
+      async function promoteToDoctor(authId, firstName, lastName) {
+        const { data: userRow, error: userError } = await client
+          .from("user_id")
+          .select("id")
+          .eq("auth_id", authId)
+          .maybeSingle();
       
-          if (selectError) {
-            alert("Error checking doctor existence: " + selectError.message);
-            return;
-          }
+        if (userError || !userRow) {
+          alert("User not found in Manage Users (user_id). Cannot promote.");
+          return;
+        }
       
-          if (existingDoctor) {
-            alert("This user is already a doctor.");
-            return;
-          }
-    
-          const { error: insertError } = await client
-            .from("doctor_data")
-            .insert([{ id: userId, first_name: firstName, last_name: lastName }]);
+        const userId = userRow.id;
       
-          if (insertError) {
-            alert("Failed to promote to doctor: " + insertError.message);
-          } else {
-            alert(`${firstName} has been promoted to doctor.`);
-            loadAdminDashboard();
-          }
+        const { data: existingDoctor } = await client
+          .from("doctor_data")
+          .select("id")
+          .eq("id", userId)
+          .maybeSingle();
+      
+        if (existingDoctor) {
+          alert("Already a doctor.");
+          return;
+        }
+      
+        const { error: insertError } = await client
+          .from("doctor_data")
+          .insert([{ id: userId, first_name: firstName, last_name: lastName }]);
+      
+        if (insertError) {
+          alert("Failed to promote to doctor: " + insertError.message);
+        } else {
+          alert(`${firstName} promoted to doctor.`);
+          loadAdminDashboard();
         }
       }
+
       async function addToUserTable(authId, email) {
         const nameParts = email.split("@")[0].split(".");
         const first = nameParts[0] || "First";
@@ -311,7 +317,7 @@
         await client.from("user_id").insert([{ auth_id: authId, first_name: first, last_name: last, email }]);
         loadAdminDashboard();
       }
-
+      
       async function deleteAuthUser(uid) {
         if (confirm("Delete this auth user permanently?")) {
           await client.auth.admin.deleteUser(uid);
