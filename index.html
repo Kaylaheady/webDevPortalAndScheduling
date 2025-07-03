@@ -450,10 +450,37 @@
         e.preventDefault();
         const file = document.getElementById("prescriptionFile").files[0];
         const name = document.getElementById("prescriptionName").value;
-        const filePath = `${currentUser.id}/${Date.now()}_${file.name}`;
-        await client.storage.from("prescriptions").upload(filePath, file);
-        await client.from("prescriptions").insert([{ prescription_name: name, patient_id: currentUser.id, file_path: filePath }]);
-        loadDashboard();
+      
+        const { data: userRow, error: userError } = await client
+          .from("user_id")
+          .select("id")
+          .eq("auth_id", currentUser.id)
+          .maybeSingle();
+      
+        if (userError || !userRow?.id) {
+          alert("User ID not found in database.");
+          return;
+        }
+      
+        const userId = userRow.id;
+        const filePath = `${userId}/${Date.now()}_${file.name}`;
+      
+        const { error: uploadErr } = await client.storage.from("prescriptions").upload(filePath, file);
+        if (uploadErr) {
+          alert("Upload failed: " + uploadErr.message);
+          return;
+        }
+      
+        const { error: insertErr } = await client.from("prescriptions").insert([
+          { prescription_name: name, patient_id: userId, file_path: filePath }
+        ]);
+      
+        if (insertErr) {
+          alert("Failed to save prescription: " + insertErr.message);
+        } else {
+          alert("Prescription uploaded!");
+          loadDashboard();
+        }
       });
 
       window.logout = async function () {
