@@ -138,6 +138,11 @@
           <div class="card-header">Auth Users (Unregistered)</div>
           <div class="card-body" id="authUsers"></div>
         </div>
+
+        <div class="card mb-3">
+          <div class="card-header">All Prescriptions</div>
+          <div class="card-body" id="adminPrescriptions"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -317,6 +322,51 @@
         document.getElementById("adminAppointments").innerHTML = appointments.map(a => `
           <div><strong>${new Date(a.date_time).toLocaleString()}</strong> | Patient ID: ${a.patient} | Doctor ID: ${a.doctor}</div>
         `).join("");
+
+        loadAdminPrescriptions();
+      }
+
+      async function loadAdminPrescriptions() {
+        const { data: prescriptions, error } = await client
+          .from("prescriptions")
+          .select(`
+            id,
+            prescription_name,
+            file_path,
+            created_at,
+            patient_id,
+            doctor_id,
+            user:patient_id (first_name, last_name),
+            doctor:doctor_id (first_name, last_name)
+          `);
+      
+        if (error) {
+          document.getElementById("adminPrescriptions").innerHTML = "<p class='text-danger'>Failed to load prescriptions</p>";
+          return;
+        }
+      
+        const container = document.getElementById("adminPrescriptions");
+        container.innerHTML = prescriptions.length === 0 ? "<p>No prescriptions found.</p>" : "";
+      
+        for (const p of prescriptions) {
+          const { data: signed } = await client.storage.from("prescriptions").createSignedUrl(p.file_path, 120);
+          const patientName = p.user?.first_name + " " + p.user?.last_name || "Unknown Patient";
+          const doctorName = p.doctor?.first_name + " " + p.doctor?.last_name || "Unknown Doctor";
+      
+          const div = document.createElement("div");
+          div.classList.add("mb-3");
+          div.innerHTML = `
+            <div class="border rounded p-3">
+              <strong>${p.prescription_name}</strong><br/>
+              <a href="${signed?.signedUrl}" target="_blank">View Prescription</a><br/>
+              <small class="text-muted">Uploaded: ${new Date(p.created_at).toLocaleString()}</small><br/>
+              <small><strong>Patient:</strong> ${patientName}</small><br/>
+              <small><strong>Doctor:</strong> ${doctorName}</small><br/>
+              <button class="btn btn-sm btn-danger mt-2" onclick="deletePrescription('${p.id}', '${p.file_path}')">Delete</button>
+            </div>
+          `;
+          container.appendChild(div);
+        }
       }
 
       async function removeUser(userId) {
@@ -418,6 +468,21 @@
       window.promoteToDoctor = promoteToDoctor;
       window.addToUserTable = addToUserTable;
       window.deleteAuthUser = deleteAuthUser;
+
+      async function deletePrescription(id, filePath) {
+          if (!confirm("Delete this prescription permanently?")) return;
+        
+          const { error: fileErr } = await client.storage.from("prescriptions").remove([filePath]);
+          const { error: dbErr } = await client.from("prescriptions").delete().eq("id", id);
+        
+          if (fileErr || dbErr) {
+            alert("Failed to delete: " + (fileErr?.message || dbErr?.message));
+          } else {
+            alert("Prescription deleted.");
+            loadAdminPrescriptions();
+          }
+        }
+      window.deletePrescription = deletePrescription;
     };
   </script>
 </body>
