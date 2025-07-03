@@ -229,8 +229,7 @@
         const { data: { user } } = await client.auth.getUser();
         if (!user) return;
         currentUser = user;
-      
-        // FIX: Show dashboard and hide login/signup
+
         document.getElementById("dashboard").style.display = "block";
         document.getElementById("authSection").style.display = "none";
       
@@ -295,7 +294,15 @@
       async function loadAdminDashboard() {
         const { data: users } = await client.from("user_id").select("*");
         const { data: doctors } = await client.from("doctor_data").select("*");
-        const { data: appointments } = await client.from("appointments").select("*");
+        const { data: appointments } = await client
+          .from("appointments")
+          .select(`
+            id,
+            date_time,
+            user:patient (first_name, last_name),
+            doctor_data:doctor (first_name, last_name)
+          `);
+        
         const { data: authList } = await client.auth.admin.listUsers();
 
         const userIds = users.map(u => u.auth_id);
@@ -319,10 +326,18 @@
           `;
         }).join("");
 
-        document.getElementById("adminAppointments").innerHTML = appointments.map(a => `
-          <div><strong>${new Date(a.date_time).toLocaleString()}</strong> | Patient ID: ${a.patient} | Doctor ID: ${a.doctor}</div>
-        `).join("");
-
+        document.getElementById("adminAppointments").innerHTML = appointments.map(a => {
+          const patientName = a.user?.first_name + " " + a.user?.last_name || "Unknown";
+          const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown";
+        
+          return `
+            <div>
+              <strong>${new Date(a.date_time).toLocaleString()}</strong><br/>
+              <span>Patient: ${patientName}</span><br/>
+              <span>Doctor: ${doctorName}</span>
+            </div>
+          `;
+        }).join("");
         loadAdminPrescriptions();
       }
 
@@ -433,16 +448,39 @@
         const datetime = `${date}T${time}`;
         const msg = document.getElementById("bookingMessage");
 
-        const { data: conflict } = await client.from("appointments").select("*").eq("date_time", datetime);
+        const { data: userRow, error: userError } = await client
+          .from("user_id")
+          .select("id")
+          .eq("auth_id", currentUser.id)
+          .maybeSingle();
+      
+        if (userError || !userRow?.id) {
+          msg.textContent = "Could not find your user profile.";
+          msg.className = "text-danger";
+          return;
+        }
+      
+        const patientId = userRow.id;
+      
+        const { data: conflict } = await client
+          .from("appointments")
+          .select("*")
+          .eq("date_time", datetime)
+          .eq("doctor", doctor);
+      
         if (conflict.length > 0) {
           msg.textContent = "Time slot already booked.";
           msg.className = "text-danger";
           return;
         }
-
-        const { error } = await client.from("appointments").insert([{ patient: currentUser.id, doctor, date_time: datetime }]);
+      
+        const { error } = await client.from("appointments").insert([
+          { patient: patientId, doctor, date_time: datetime }
+        ]);
+      
         msg.textContent = error ? "Booking failed: " + error.message : "Appointment booked!";
         msg.className = error ? "text-danger" : "text-success";
+      
         loadDashboard();
       });
 
