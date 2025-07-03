@@ -282,12 +282,20 @@
           prescripDiv.appendChild(div);
         }
 
-        const { data: appointments } = await client.from("appointments").select("*").eq("patient", user.id);
+        const { data: appointments } = await client
+          .from("appointments")
+          .select(`
+            date_time,
+            doctor_data:doctor (first_name, last_name)
+          `)
+          .eq("patient", userId);
+        
         const appointmentDiv = document.getElementById("appointmentRecords");
         appointmentDiv.innerHTML = appointments.length === 0 ? "<p>No appointments found.</p>" : "";
+        
         for (const a of appointments) {
-          const doc = doctors.find(d => d.id === a.doctor);
-          appointmentDiv.innerHTML += `<div><strong>${new Date(a.date_time).toLocaleString()}</strong> with ${doc ? doc.first_name + " " + doc.last_name : "Unknown Doctor"}</div>`;
+          const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown Doctor";
+          appointmentDiv.innerHTML += `<div><strong>${new Date(a.date_time).toLocaleString()}</strong> with ${doctorName}</div>`;
         }
       }
 
