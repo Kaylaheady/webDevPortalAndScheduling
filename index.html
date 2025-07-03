@@ -336,8 +336,7 @@
             created_at,
             patient_id,
             doctor_id,
-            user:patient_id (first_name, last_name),
-            doctor:doctor_id (first_name, last_name)
+            user:patient_id (first_name, last_name)
           `);
       
         if (error) {
@@ -351,7 +350,6 @@
         for (const p of prescriptions) {
           const { data: signed } = await client.storage.from("prescriptions").createSignedUrl(p.file_path, 120);
           const patientName = p.user?.first_name + " " + p.user?.last_name || "Unknown Patient";
-          const doctorName = p.doctor?.first_name + " " + p.doctor?.last_name || "Unknown Doctor";
       
           const div = document.createElement("div");
           div.classList.add("mb-3");
@@ -361,7 +359,6 @@
               <a href="${signed?.signedUrl}" target="_blank">View Prescription</a><br/>
               <small class="text-muted">Uploaded: ${new Date(p.created_at).toLocaleString()}</small><br/>
               <small><strong>Patient:</strong> ${patientName}</small><br/>
-              <small><strong>Doctor:</strong> ${doctorName}</small><br/>
               <button class="btn btn-sm btn-danger mt-2" onclick="deletePrescription('${p.id}', '${p.file_path}')">Delete</button>
             </div>
           `;
