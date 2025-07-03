@@ -170,23 +170,55 @@
 
       document.getElementById("signupForm").addEventListener("submit", async (e) => {
         e.preventDefault();
+      
         const first = document.getElementById("signupFirstName").value;
         const last = document.getElementById("signupLastName").value;
         const email = document.getElementById("signupEmail").value;
         const password = document.getElementById("signupPassword").value;
         const signupMsg = document.getElementById("signupMessage");
+      
         signupMsg.textContent = "Creating account...";
-        const { data, error } = await client.auth.signUp({ email, password });
-        if (error) {
-          signupMsg.textContent = "Sign-up failed: " + error.message;
-          signupMsg.classList.add("text-danger");
+        signupMsg.className = "text-info";
+      
+        const { data: signUpData, error: signUpError } = await client.auth.signUp({
+          email,
+          password
+        });
+      
+        if (signUpError) {
+          signupMsg.textContent = "Sign-up failed: " + signUpError.message;
+          signupMsg.className = "text-danger";
           return;
         }
-        await client.from("user_id").insert([{ first_name: first, last_name: last, auth_id: data.user.id }]);
-        signupMsg.textContent = "Sign-up successful! Please verify your email.";
-        signupMsg.classList.add("text-success");
-        setTimeout(loadDashboard, 1000);
+      
+        const { data: userData } = await client.auth.getUser();
+        const user = userData?.user;
+      
+        if (user) {
+          const { error: insertError } = await client.from("user_id").insert([
+            {
+              first_name: first,
+              last_name: last,
+              email,
+              auth_id: user.id
+            }
+          ]);
+      
+          if (insertError) {
+            signupMsg.textContent = "User created, but profile insert failed: " + insertError.message;
+            signupMsg.className = "text-danger";
+          } else {
+            signupMsg.textContent = "Sign-up successful! Please verify your email.";
+            signupMsg.className = "text-success";
+          }
+      
+          setTimeout(loadDashboard, 1000);
+        } else {
+          signupMsg.textContent = "Sign-up successful. Please check your email to verify before logging in.";
+          signupMsg.className = "text-success";
+        }
       });
+      
 
       async function loadDashboard() {
         const { data: { user } } = await client.auth.getUser();
