@@ -257,8 +257,10 @@
         if (isDoctor) {
           document.getElementById("adminSection").style.display = "block";
           loadAdminDashboard();
-        }
         
+          document.getElementById("uploadPrescriptionForm").style.display = "none";
+        }
+
         const { data: doctors } = await client.from("doctor_data").select("*");
         const docSelect = document.getElementById("appointmentDoctor");
         docSelect.innerHTML = "";
@@ -392,14 +394,22 @@
           const div = document.createElement("div");
           div.classList.add("mb-3");
           div.innerHTML = `
-            <div class="border rounded p-3">
-              <strong>${p.prescription_name}</strong><br/>
-              <a href="${signed?.signedUrl}" target="_blank">View Prescription</a><br/>
-              <small class="text-muted">Uploaded: ${new Date(p.created_at).toLocaleString()}</small><br/>
-              <small><strong>Patient:</strong> ${patientName}</small><br/>
-              <button class="btn btn-sm btn-danger mt-2" onclick="deletePrescription('${p.id}', '${p.file_path}')">Delete</button>
+          <div class="border rounded p-3" id="prescrip-${p.id}">
+            <div id="name-display-${p.id}">
+              <strong>${p.prescription_name}</strong>
+              <button class="btn btn-sm btn-outline-secondary ms-2" onclick="enableEdit('${p.id}', '${p.prescription_name.replace(/'/g, "\\'")}')">Edit</button>
             </div>
-          `;
+            <div id="name-edit-${p.id}" style="display: none;">
+              <input type="text" class="form-control form-control-sm mb-2" id="edit-input-${p.id}" value="${p.prescription_name}" />
+              <button class="btn btn-sm btn-success me-1" onclick="saveEdit('${p.id}')">Save</button>
+              <button class="btn btn-sm btn-secondary" onclick="cancelEdit('${p.id}')">Cancel</button>
+            </div>
+            <a href="${signed?.signedUrl}" target="_blank">View Prescription</a><br/>
+            <small class="text-muted">Uploaded: ${new Date(p.created_at).toLocaleString()}</small><br/>
+            <small><strong>Patient:</strong> ${patientName}</small><br/>
+            <button class="btn btn-sm btn-danger mt-2" onclick="deletePrescription('${p.id}', '${p.file_path}')">Delete</button>
+          </div>
+        `;
           container.appendChild(div);
         }
       }
@@ -573,6 +583,38 @@
       const panel = document.getElementById(`panel-${id}`);
       panel.classList.toggle("d-none");
     };
+
+    window.enableEdit = function (id, currentName) {
+  document.getElementById(`name-display-${id}`).style.display = 'none';
+  document.getElementById(`name-edit-${id}`).style.display = 'block';
+  document.getElementById(`edit-input-${id}`).value = currentName;
+    };
+    
+    window.cancelEdit = function (id) {
+      document.getElementById(`name-edit-${id}`).style.display = 'none';
+      document.getElementById(`name-display-${id}`).style.display = 'block';
+    };
+    
+    window.saveEdit = async function (id) {
+      const input = document.getElementById(`edit-input-${id}`);
+      const newName = input.value.trim();
+    
+      if (!newName) {
+        alert("Prescription name cannot be empty.");
+        return;
+      }
+    
+      const { error } = await client
+        .from("prescriptions")
+        .update({ prescription_name: newName })
+        .eq("id", id);
+    
+      if (error) {
+        alert("Update failed: " + error.message);
+      } else {
+        alert("Prescription name updated.");
+        loadAdminPrescriptions(); // Refresh the list
+      }
     };
   </script>
 </body>
