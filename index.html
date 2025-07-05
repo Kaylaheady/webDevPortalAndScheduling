@@ -335,6 +335,23 @@
         }).join("");
 
         document.getElementById("adminAppointments").innerHTML = appointments.map(a => {
+          const appointmentId = a.id;
+          const patientName = a.user?.first_name + " " + a.user?.last_name || "Unknown";
+          const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown";
+
+          return `
+            <div class="border rounded p-3 bg-light" style="cursor: pointer;" onclick="togglePanel('${appointmentId}')">
+              <div>
+                <strong>${new Date(a.date_time).toLocaleString()}</strong><br/>
+                <span>Patient: ${patientName}</span><br/>
+                <span>Doctor: ${doctorName}</span>
+              </div>
+              <div id="panel-${appointmentId}" class="p-3 border-start border-end border-bottom d-none">
+                  Appointment details go here.
+               </div>
+             </div>
+          `;
+        }).join("");
           const patientName = a.user?.first_name + " " + a.user?.last_name || "Unknown";
           const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown";
         
@@ -345,7 +362,6 @@
               <span>Doctor: ${doctorName}</span>
             </div>
           `;
-        }).join("");
         loadAdminPrescriptions();
       }
 
@@ -552,6 +568,11 @@
           }
         }
       window.deletePrescription = deletePrescription;
+
+    window.togglePanel = function (id) {
+      const panel = document.getElementById(`panel-${id}`);
+      panel.classList.toggle("d-none");
+    };
     };
   </script>
 </body>
