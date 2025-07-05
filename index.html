@@ -354,16 +354,6 @@
              </div>
           `;
         }).join("");
-          const patientName = a.user?.first_name + " " + a.user?.last_name || "Unknown";
-          const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown";
-        
-          return `
-            <div>
-              <strong>${new Date(a.date_time).toLocaleString()}</strong><br/>
-              <span>Patient: ${patientName}</span><br/>
-              <span>Doctor: ${doctorName}</span>
-            </div>
-          `;
         loadAdminPrescriptions();
       }
 
