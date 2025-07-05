@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Online Appointment and Record System</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+</head>
+<body>
+  <div class="container py-5">
+    <h2 class="mb-4 text-center">Online Appointment and Record System</h2>
+    <div class="row mb-4" id="authSection">
+      <!-- Login Form -->
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header bg-light">Login</div>
+          <div class="card-body">
+            <form id="loginForm">
+              <div class="mb-3">
+                <label for="loginEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="loginEmail" required />
+              </div>
+              <div class="mb-3">
+                <label for="loginPassword" class="form-label">Password</label>
+                <input type="password" class="form-control" id="loginPassword" required />
+              </div>
+              <button type="submit" class="btn btn-primary">Log In</button>
+            </form>
+            <div id="loginMessage" class="mt-3 text-success"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sign Up Form -->
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header bg-light">Sign Up</div>
+          <div class="card-body">
+            <form id="signupForm">
+              <div class="mb-3">
+                <label for="signupFirstName" class="form-label">First Name</label>
+                <input type="text" class="form-control" id="signupFirstName" required />
+              </div>
+              <div class="mb-3">
+                <label for="signupLastName" class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="signupLastName" required />
+              </div>
+              <div class="mb-3">
+                <label for="signupEmail" class="form-label">Email</label>
+                <input type="email" class="form-control" id="signupEmail" required />
+              </div>
+              <div class="mb-3">
+                <label for="signupPassword" class="form-label">Password</label>
+                <input type="password" class="form-control" id="signupPassword" required />
+              </div>
+              <button type="submit" class="btn btn-success">Sign Up</button>
+            </form>
+            <div id="signupMessage" class="mt-3 text-success"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <div id="logout" style="display: none;">
+          <h4 id="welcomeMsg" class="mb-3"></h4>
+          <button class="btn btn-secondary mb-4" onclick="logout()">Log out</button>
+      </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard" style="display: none;">
+
+      <!-- Booking -->
+      <div class="card mb-4">
+        <div class="card-header">Book an Appointment</div>
+        <div class="card-body">
+          <form id="bookingForm">
+            <div class="mb-3">
+              <label for="appointmentDate" class="form-label">Date</label>
+              <input type="date" class="form-control" id="appointmentDate" required />
+            </div>
+            <div class="mb-3">
+              <label for="appointmentTime" class="form-label">Time</label>
+              <input type="time" class="form-control" id="appointmentTime" required />
+            </div>
+            <div class="mb-3">
+              <label for="appointmentDoctor" class="form-label">Select Doctor</label>
+              <select class="form-control" id="appointmentDoctor" required></select>
+            </div>
+            <button type="submit" class="btn btn-primary">Book</button>
+          </form>
+          <div id="bookingMessage" class="mt-3"></div>
+        </div>
+      </div>
+
+      <!-- Upload Prescription -->
+      <div class="card mb-4">
+        <div class="card-header">Upload Prescription</div>
+        <div class="card-body">
+          <form id="uploadPrescriptionForm" enctype="multipart/form-data">
+            <div class="mb-3">
+              <label for="prescriptionName" class="form-label">Description</label>
+              <input type="text" class="form-control" id="prescriptionName" required />
+            </div>
+            <div class="mb-3">
+              <label for="prescriptionFile" class="form-label">Select File</label>
+              <input type="file" class="form-control" id="prescriptionFile" required />
+            </div>
+            <button type="submit" class="btn btn-info">Upload</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Prescriptions Viewer -->
+      <div class="card mt-4">
+        <div class="card-header">All Your Prescriptions</div>
+        <div class="card-body" id="allPrescriptions"></div>
+      </div>
+
+      <!-- Appointments Viewer -->
+      <div class="card mt-4">
+        <div class="card-header">Your Appointments</div>
+        <div class="card-body" id="appointmentRecords"></div>
+      </div>
+    </div>
+
+      <!-- Admin Panel -->
+      <div id="adminSection" style="display: none;">
+        <h4 class="mt-4">Admin Dashboard</h4>
+
+        <div class="card mb-3">
+          <div class="card-header">All Appointments</div>
+          <div class="card-body" id="adminAppointments"></div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">Manage Users</div>
+          <div class="card-body" id="adminUsers"></div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">Auth Users (Unregistered)</div>
+          <div class="card-body" id="authUsers"></div>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-header">All Prescriptions</div>
+          <div class="card-body" id="adminPrescriptions"></div>
+        </div>
+      </div>
+  </div>
+
+  <!-- Script -->
+  <script>
+    window.onload = () => {
+      const supabaseUrl = "https://edtmmwdoqzooehxlawae.supabase.co";
+      const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkdG1td2RvcXpvb2VoeGxhd2FlIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTQwNDU0MSwiZXhwIjoyMDY0OTgwNTQxfQ.UFXAqw_7aHj6aqnwvkPrKAhfM6zt7rAKtYFWzGCtLPc";
+      const { createClient } = supabase;
+      const client = createClient(supabaseUrl, supabaseKey);
+      let currentUser = null;
+
+      document.getElementById("loginForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+        const loginMsg = document.getElementById("loginMessage");
+        loginMsg.textContent = "Logging in...";
+        const { error } = await client.auth.signInWithPassword({ email, password });
+        if (error) {
+          loginMsg.textContent = "Login failed: " + error.message;
+          loginMsg.classList.replace("text-success", "text-danger");
+        } else {
+          loginMsg.textContent = "Login successful!";
+          loginMsg.classList.replace("text-danger", "text-success");
+          setTimeout(loadDashboard, 1000);
+        }
+      });
+
+      document.getElementById("signupForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const first = document.getElementById("signupFirstName").value;
+        const last = document.getElementById("signupLastName").value;
+        const email = document.getElementById("signupEmail").value;
+        const password = document.getElementById("signupPassword").value;
+        const signupMsg = document.getElementById("signupMessage");
+
+        signupMsg.textContent = "Creating account...";
+        signupMsg.className = "text-info";
+
+        const { data: signUpData, error: signUpError } = await client.auth.signUp({
+          email,
+          password
+        });
+
+        if (signUpError) {
+          signupMsg.textContent = "Sign-up failed: " + signUpError.message;
+          signupMsg.className = "text-danger";
+          return;
+        }
+
+        const { data: userData } = await client.auth.getUser();
+        const user = userData?.user;
+
+        if (user) {
+          const { error: insertError } = await client.from("user_id").insert([
+            {
+              first_name: first,
+              last_name: last,
+              email,
+              auth_id: user.id
+            }
+          ]);
+
+          if (insertError) {
+            signupMsg.textContent = "User created, but profile insert failed: " + insertError.message;
+            signupMsg.className = "text-danger";
+          } else {
+            signupMsg.textContent = "Sign-up successful! Please verify your email.";
+            signupMsg.className = "text-success";
+          }
+
+          setTimeout(loadDashboard, 1000);
+        } else {
+          signupMsg.textContent = "Sign-up successful. Please check your email to verify before logging in.";
+          signupMsg.className = "text-success";
+        }
+      });
+
+
+      async function loadDashboard() {
+        const { data: { user } } = await client.auth.getUser();
+        if (!user) return;
+        currentUser = user;
+
+        document.getElementById("dashboard").style.display = "block";
+        document.getElementById("authSection").style.display = "none";
+
+        const { data: userRow, error: userError } = await client
+          .from("user_id")
+          .select("id")
+          .eq("auth_id", user.id)
+          .maybeSingle();
+
+        if (userError || !userRow?.id) {
+          console.warn("User ID not found in user_id table");
+          return;
+        }
+
+        const userId = userRow.id;
+        const { data: doctorCheck, error: docErr } = await client
+          .from("doctor_data")
+          .select("id")
+          .eq("id", userId)
+          .maybeSingle();
+        console.log("Doctor check:", doctorCheck);
+        console.log("Error:", docErr);
+
+        const isDoctor = !!doctorCheck;
+        if (isDoctor) {
+          document.getElementById("dashboard").style.display = "none";
+          document.getElementById("adminSection").style.display = "block";
+          document.getElementById("logout").style.display = "block";
+          loadAdminDashboard();
+        }
+        else {  // not a doctor/admin so load user page
+          document.getElementById("adminSection").style.display = "none";
+          document.getElementById("dashboard").style.display = "block";
+          document.getElementById("logout").style.display = "block";
+        }
+
+        const { data: doctors } = await client.from("doctor_data").select("*");
+        const docSelect = document.getElementById("appointmentDoctor");
+        docSelect.innerHTML = "";
+        doctors.forEach(d => {
+          const opt = document.createElement("option");
+          opt.value = d.id;
+          opt.textContent = `${d.first_name} ${d.last_name}`;
+          docSelect.appendChild(opt);
+        });
+
+        const { data: prescriptions } = await client.from("prescriptions").select("*").eq("patient_id", user.id);
+        const prescripDiv = document.getElementById("allPrescriptions");
+        prescripDiv.innerHTML = prescriptions.length === 0 ? "<p>No prescriptions found.</p>" : "";
+        for (const p of prescriptions) {
+          const { data: signedData } = await client.storage.from("prescriptions").createSignedUrl(p.file_path, 60);
+          const div = document.createElement("div");
+          div.innerHTML = `<div class="mb-3">
+            <a href="${signedData?.signedUrl}" target="_blank">${p.prescription_name}</a>
+            <br/><small class="text-muted">Uploaded on ${new Date(p.created_at).toLocaleString()}</small>
+          </div>`;
+          prescripDiv.appendChild(div);
+        }
+
+        const { data: appointments } = await client
+          .from("appointments")
+          .select(`
+            date_time,
+            doctor_data:doctor (first_name, last_name)
+          `)
+          .eq("patient", userId);
+
+        const appointmentDiv = document.getElementById("appointmentRecords");
+        appointmentDiv.innerHTML = appointments.length === 0 ? "<p>No appointments found.</p>" : "";
+
+        for (const a of appointments) {
+          const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown Doctor";
+          appointmentDiv.innerHTML += `<div><strong>${new Date(a.date_time).toLocaleString()}</strong> with ${doctorName}</div>`;
+        }
+      }
+
+      async function loadAdminDashboard() {
+        const { data: users } = await client.from("user_id").select("*");
+        const { data: doctors } = await client.from("doctor_data").select("*");
+        const { data: appointments } = await client
+          .from("appointments")
+          .select(`
+            id,
+            date_time,
+            user:patient (first_name, last_name),
+            doctor_data:doctor (first_name, last_name)
+          `);
+
+        const { data: authList } = await client.auth.admin.listUsers();
+
+        const userIds = users.map(u => u.auth_id);
+
+        document.getElementById("adminUsers").innerHTML = users.map(u => `
+          <div>
+            ${u.first_name} ${u.last_name}
+            <button class="btn btn-sm btn-danger" onclick="removeUser('${u.id}')">Delete</button>
+            <button class="btn btn-sm btn-secondary" onclick="promoteToDoctor('${u.auth_id}', '${u.first_name}', '${u.last_name}')">Promote to Doctor</button>
+          </div>
+        `).join("");
+
+        document.getElementById("authUsers").innerHTML = authList.users.map(u => {
+          const isRegistered = userIds.includes(u.id);
+          return `
+            <div>
+              ${u.email}
+              <button class="btn btn-sm btn-danger" onclick="deleteAuthUser('${u.id}')">Delete Auth</button>
+              ${!isRegistered ? `<button class="btn btn-sm btn-primary" onclick="addToUserTable('${u.id}', '${u.email}')">Add to user_id</button>` : ''}
+            </div>
+          `;
+        }).join("");
+
+        document.getElementById("adminAppointments").innerHTML = appointments.map(a => {
+          const appointmentId = a.id;
+          const patientName = a.user?.first_name + " " + a.user?.last_name || "Unknown";
+          const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown";
+
+          return `
+            <div class="border rounded p-3 bg-light" style="cursor: pointer;" onclick="togglePanel('${appointmentId}')">
+              <div>
+                <strong>${new Date(a.date_time).toLocaleString()}</strong><br/>
+                <span>Patient: ${patientName}</span><br/>
+                <span>Doctor: ${doctorName}</span>
+              </div>
+              <div id="panel-${appointmentId}" class="p-3 border-start border-end border-bottom d-none">
+                  Hello world
+               </div>
+             </div>
+          `;
+        }).join("");
+        loadAdminPrescriptions();
+      }
+
+      async function loadAdminPrescriptions() {
+        const { data: prescriptions, error } = await client
+          .from("prescriptions")
+          .select(`
+            id,
+            prescription_name,
+            file_path,
+            created_at,
+            patient_id,
+            user:patient_id (first_name, last_name)
+          `);
+
+        if (error) {
+          document.getElementById("adminPrescriptions").innerHTML = "<p class='text-danger'>Failed to load prescriptions</p>";
+          return;
+        }
+
+        const container = document.getElementById("adminPrescriptions");
+        container.innerHTML = prescriptions.length === 0 ? "<p>No prescriptions found.</p>" : "";
+
+        for (const p of prescriptions) {
+          const { data: signed } = await client.storage.from("prescriptions").createSignedUrl(p.file_path, 120);
+          const patientName = p.user?.first_name + " " + p.user?.last_name || "Unknown Patient";
+
+          const div = document.createElement("div");
+          div.classList.add("mb-3");
+          div.innerHTML = `
+            <div class="border rounded p-3">
+              <strong>${p.prescription_name}</strong><br/>
+              <a href="${signed?.signedUrl}" target="_blank">View Prescription</a><br/>
+              <small class="text-muted">Uploaded: ${new Date(p.created_at).toLocaleString()}</small><br/>
+              <small><strong>Patient:</strong> ${patientName}</small><br/>
+              <button class="btn btn-sm btn-danger mt-2" onclick="deletePrescription('${p.id}', '${p.file_path}')">Delete</button>
+            </div>
+          `;
+          container.appendChild(div);
+        }
+      }
+
+      async function removeUser(userId) {
+        if (confirm("Remove this user?")) {
+          await client.from("user_id").delete().eq("id", userId);
+          loadAdminDashboard();
+        }
+      }
+
+      async function promoteToDoctor(authId, firstName, lastName) {
+        const { data: userRow, error: userError } = await client
+          .from("user_id")
+          .select("id")
+          .eq("auth_id", authId)
+          .maybeSingle();
+          console.log("Resolved user_id.id:", userRow?.id);
+
+        if (userError || !userRow) {
+          alert("User not found in Manage Users (user_id). Cannot promote.");
+          return;
+        }
+
+        const userId = userRow.id;
+
+        const { data: existingDoctor } = await client
+          .from("doctor_data")
+          .select("id")
+          .eq("id", userId)
+          .maybeSingle();
+
+        if (existingDoctor) {
+          alert("Already a doctor.");
+          return;
+        }
+
+        const { error: insertError } = await client
+          .from("doctor_data")
+          .insert([{ id: userId, first_name: firstName, last_name: lastName }]);
+
+        if (insertError) {
+          alert("Failed to promote to doctor: " + insertError.message);
+        } else {
+          alert(`${firstName} promoted to doctor.`);
+          loadAdminDashboard();
+        }
+      }
+
+      async function addToUserTable(authId, email) {
+        const nameParts = email.split("@")[0].split(".");
+        const first = nameParts[0] || "First";
+        const last = nameParts[1] || "Last";
+        await client.from("user_id").insert([{ auth_id: authId, first_name: first, last_name: last, email }]);
+        loadAdminDashboard();
+      }
+
+      async function deleteAuthUser(uid) {
+        if (confirm("Delete this auth user permanently?")) {
+          await client.auth.admin.deleteUser(uid);
+          loadAdminDashboard();
+        }
+      }
+
+      document.getElementById("bookingForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const date = document.getElementById("appointmentDate").value;
+        const time = document.getElementById("appointmentTime").value;
+        const doctor = document.getElementById("appointmentDoctor").value;
+        const datetime = `${date}T${time}`;
+        const msg = document.getElementById("bookingMessage");
+
+        const { data: userRow, error: userError } = await client
+          .from("user_id")
+          .select("id")
+          .eq("auth_id", currentUser.id)
+          .maybeSingle();
+
+        if (userError || !userRow?.id) {
+          msg.textContent = "Could not find your user profile.";
+          msg.className = "text-danger";
+          return;
+        }
+
+        const patientId = userRow.id;
+
+        const { data: conflict } = await client
+          .from("appointments")
+          .select("*")
+          .eq("date_time", datetime)
+          .eq("doctor", doctor);
+
+        if (conflict.length > 0) {
+          msg.textContent = "Time slot already booked.";
+          msg.className = "text-danger";
+          return;
+        }
+
+        const { error } = await client.from("appointments").insert([
+          { patient: patientId, doctor, date_time: datetime }
+        ]);
+
+        msg.textContent = error ? "Booking failed: " + error.message : "Appointment booked!";
+        msg.className = error ? "text-danger" : "text-success";
+
+        loadDashboard();
+      });
+
+      document.getElementById("uploadPrescriptionForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const file = document.getElementById("prescriptionFile").files[0];
+        const name = document.getElementById("prescriptionName").value;
+
+        const { data: userRow, error: userError } = await client
+          .from("user_id")
+          .select("id")
+          .eq("auth_id", currentUser.id)
+          .maybeSingle();
+
+        if (userError || !userRow?.id) {
+          alert("User ID not found in database.");
+          return;
+        }
+
+        const userId = userRow.id;
+        const filePath = `${userId}/${Date.now()}_${file.name}`;
+
+        const { error: uploadErr } = await client.storage.from("prescriptions").upload(filePath, file);
+        if (uploadErr) {
+          alert("Upload failed: " + uploadErr.message);
+          return;
+        }
+
+        const { error: insertErr } = await client.from("prescriptions").insert([
+          { prescription_name: name, patient_id: userId, file_path: filePath }
+        ]);
+
+        if (insertErr) {
+          alert("Failed to save prescription: " + insertErr.message);
+        } else {
+          alert("Prescription uploaded!");
+          loadDashboard();
+        }
+      });
+
+      window.logout = async function () {
+        await client.auth.signOut();
+        location.reload();
+      };
+      window.removeUser = removeUser;
+      window.promoteToDoctor = promoteToDoctor;
+      window.addToUserTable = addToUserTable;
+      window.deleteAuthUser = deleteAuthUser;
+
+      async function deletePrescription(id, filePath) {
+          if (!confirm("Delete this prescription permanently?")) return;
+
+          const { error: fileErr } = await client.storage.from("prescriptions").remove([filePath]);
+          const { error: dbErr } = await client.from("prescriptions").delete().eq("id", id);
+
+          if (fileErr || dbErr) {
+            alert("Failed to delete: " + (fileErr?.message || dbErr?.message));
+          } else {
+            alert("Prescription deleted.");
+            loadAdminPrescriptions();
+          }
+        }
+      window.deletePrescription = deletePrescription;
+    };
+    window.togglePanel = function (id) {
+      const panel = document.getElementById(`panel-${id}`);
+      panel.classList.toggle("d-none");
+    };
+  </script>
+</body>
+</html>
