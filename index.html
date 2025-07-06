@@ -339,16 +339,36 @@
           .from("appointments")
           .select(`
             date_time,
-            doctor_data:doctor (first_name, last_name)
+            doctor_data:doctor (first_name, last_name),
+            patient_data:patient (first_name, last_name)
           `)
-          .eq("patient", userId);
+          .or(`doctor.eq.${userId},patient.eq.${userId}`);
+        
+        const now = new Date();
+        const pastAppointments = appointments.filter(a => new Date(a.date_time) < now);
+        const upcomingAppointments = appointments.filter(a => new Date(a.date_time) >= now);
         
         const appointmentDiv = document.getElementById("appointmentRecords");
-        appointmentDiv.innerHTML = appointments.length === 0 ? "<p>No appointments found.</p>" : "";
+        appointmentDiv.innerHTML = `
+          <h5 class="mt-3">Upcoming Appointments</h5>
+          <div id="upcoming"></div>
+          <h5 class="mt-4">Past Appointments</h5>
+          <div id="past"></div>
+        `;
         
-        for (const a of appointments) {
-          const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown Doctor";
-          appointmentDiv.innerHTML += `<div><strong>${new Date(a.date_time).toLocaleString()}</strong> with ${doctorName}</div>`;
+        const upcomingDiv = document.getElementById("upcoming");
+        const pastDiv = document.getElementById("past");
+        
+        const renderAppointment = (a) => {
+          const isDoctor = a.doctor_data?.first_name && a.doctor_data?.last_name;
+          const doctorName = a.doctor_data ? `${a.doctor_data.first_name} ${a.doctor_data.last_name}` : "Unknown Doctor";
+          const patientName = a.patient_data ? `${a.patient_data.first_name} ${a.patient_data.last_name}` : "Unknown Patient";
+        
+          return `<div><strong>${new Date(a.date_time).toLocaleString()}</strong> - Patient: ${patientName} | Doctor: ${doctorName}</div>`;
+        };
+        
+        upcomingDiv.innerHTML = upcomingAppointments.map(renderAppointment).join('') || '<p>No upcoming appointments.</p>';
+        pastDiv.innerHTML = pastAppointments.map(renderAppointment).join('') || '<p>No past appointments.</p>';
         }
       }
 
