@@ -379,6 +379,7 @@
           .select(`
             id,
             date_time,
+            remarks,
             user:patient (first_name, last_name),
             doctor_data:doctor (first_name, last_name)
           `);
@@ -408,9 +409,10 @@
 
         document.getElementById("adminAppointments").innerHTML = appointments.map(a => {
           const appointmentId = a.id;
+          const remarks = a.remarks || "";
           const patientName = a.user?.first_name + " " + a.user?.last_name || "Unknown";
           const doctorName = a.doctor_data?.first_name + " " + a.doctor_data?.last_name || "Unknown";
-
+          
           return `
             <div class="border rounded p-3 bg-light" style="cursor: pointer;" onclick="togglePanel('${appointmentId}')">
               <div>
@@ -419,10 +421,19 @@
                 <span>Doctor: ${doctorName}</span>
               </div>
               <div id="panel-${appointmentId}" class="p-3 border-start border-end border-bottom d-none">
-                  Appointment details go here.
-               </div>
-             </div>
+                <div id="remarks-display-${appointmentId}">
+                  <strong>Remarks:</strong> <span>${remarks || "<em>None</em>"}</span>
+                  <button class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); enableRemarksEdit('${appointmentId}', \`${remarks.replace(/`/g, "\\`")}\`)">Edit</button>
+                </div>
+                <div id="remarks-edit-${appointmentId}" style="display: none;">
+                  <textarea class="form-control mb-2" id="edit-remarks-input-${appointmentId}">${remarks}</textarea>
+                  <button class="btn btn-sm btn-success me-1" onclick="saveRemarks('${appointmentId}')">Save</button>
+                  <button class="btn btn-sm btn-secondary" onclick="cancelRemarksEdit('${appointmentId}')">Cancel</button>
+                </div>
+              </div>
+            </div>
           `;
+
         }).join("");
         loadAdminPrescriptions();
       }
@@ -674,6 +685,34 @@
       } else {
         alert("Prescription name updated.");
         loadAdminPrescriptions(); // Refresh the list
+      }
+    };
+
+      window.enableRemarksEdit = function (id, currentRemarks) {
+      document.getElementById(`remarks-display-${id}`).style.display = 'none';
+      document.getElementById(`remarks-edit-${id}`).style.display = 'block';
+      document.getElementById(`edit-remarks-input-${id}`).value = currentRemarks;
+    };
+    
+    window.cancelRemarksEdit = function (id) {
+      document.getElementById(`remarks-edit-${id}`).style.display = 'none';
+      document.getElementById(`remarks-display-${id}`).style.display = 'block';
+    };
+    
+    window.saveRemarks = async function (id) {
+      const input = document.getElementById(`edit-remarks-input-${id}`);
+      const newRemarks = input.value.trim();
+    
+      const { error } = await client
+        .from("appointments")
+        .update({ remarks: newRemarks })
+        .eq("id", id);
+    
+      if (error) {
+        alert("Failed to update remarks: " + error.message);
+      } else {
+        alert("Remarks updated.");
+        loadAdminDashboard();
       }
     };
     };
