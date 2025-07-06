@@ -370,7 +370,6 @@
         upcomingDiv.innerHTML = upcomingAppointments.map(renderAppointment).join('') || '<p>No upcoming appointments.</p>';
         pastDiv.innerHTML = pastAppointments.map(renderAppointment).join('') || '<p>No past appointments.</p>';
         }
-      }
 
       async function loadAdminDashboard() {
         const { data: users } = await client.from("user_id").select("*");
