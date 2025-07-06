@@ -425,11 +425,11 @@
                   <strong>Remarks:</strong> <span>${remarks || "<em>None</em>"}</span>
                   <button class="btn btn-sm btn-outline-secondary ms-2" onclick="event.stopPropagation(); enableRemarksEdit('${appointmentId}', \`${remarks.replace(/`/g, "\\`")}\`)">Edit</button>
                 </div>
-                <div id="remarks-edit-${appointmentId}" style="display: none;">
-                  <textarea class="form-control mb-2" id="edit-remarks-input-${appointmentId}">${remarks}</textarea>
-                  <button class="btn btn-sm btn-success me-1" onclick="saveRemarks('${appointmentId}')">Save</button>
-                  <button class="btn btn-sm btn-secondary" onclick="cancelRemarksEdit('${appointmentId}')">Cancel</button>
-                </div>
+                <div id="remarks-edit-${appointmentId}" style="display: none;" onclick="event.stopPropagation();">
+                <textarea class="form-control mb-2" id="edit-remarks-input-${appointmentId}">${remarks}</textarea>
+                <button class="btn btn-sm btn-success me-1" onclick="saveRemarks('${appointmentId}')">Save</button>
+                <button class="btn btn-sm btn-secondary" onclick="cancelRemarksEdit('${appointmentId}')">Cancel</button>
+              </div>
               </div>
             </div>
           `;
