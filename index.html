@@ -435,7 +435,6 @@
         
           const activeUserIds = new Set(activeUsersRaw.map(a => a.patient));
           const activeCount = activeUserIds.size;
-          const activeCount = [...activeUserIds].length;
           document.getElementById("activeUsers").textContent = activeCount;
           document.getElementById("inactiveUsers").textContent = users.length - activeCount;
         
