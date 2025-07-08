@@ -200,45 +200,50 @@
               </div>
             </div>
           </div>
-      
-          <div class="tab-pane fade" id="analyticsContent" role="tabpanel">
-            <div class="p-3">
-              <h4>Analytics Dashboard</h4>
-              <div id="analyticsSection">
-                <div class="row mb-4">
-                  <div class="col-md-4">
-                    <div class="card text-center">
-                      <div class="card-body">
-                        <h5>Total Users</h5>
-                        <p id="totalUsers" class="display-6 text-primary">...</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="card text-center">
-                      <div class="card-body">
-                        <h5>Active Users</h5>
-                        <p id="activeUsers" class="display-6 text-success">...</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div class="col-md-4">
-                    <div class="card text-center">
-                      <div class="card-body">
-                        <h5>Inactive Users</h5>
-                        <p id="inactiveUsers" class="display-6 text-danger">...</p>
-                      </div>
-                    </div>
+            
+                   <div class="row mb-4">
+              <div class="col-md-4">
+                <div class="card text-center">
+                  <div class="card-body">
+                    <h5>Total Users</h5>
+                    <p id="totalUsers" class="display-6 text-primary">...</p>
                   </div>
                 </div>
-              
-                <div class="row mb-4">
-                  <div class="col-md-6">
-                    <canvas id="userGrowthChart"></canvas>
+              </div>
+              <div class="col-md-4">
+                <div class="card text-center">
+                  <div class="card-body">
+                    <h5>Active Users</h5>
+                    <p id="activeUsers" class="display-6 text-success">...</p>
                   </div>
-                  <div class="col-md-6">
-                    <canvas id="appointmentTypeChart"></canvas>
+                </div>
+              </div>
+              <div class="col-md-4">
+                <div class="card text-center">
+                  <div class="card-body">
+                    <h5>Inactive Users</h5>
+                    <p id="inactiveUsers" class="display-6 text-danger">...</p>
                   </div>
+                </div>
+              </div>
+            </div> 
+            
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="card text-center">
+                  <div class="card-body">
+                    <h5>Feature Usage Comparison</h5>
+                    <canvas id="featureUsageChart"></canvas>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6 d-flex align-items-center justify-content-center">
+                <div class="text-center">
+                  <h5 class="mb-2">Most Used Feature</h5>
+                  <p class="display-6 fw-bold" id="mostUsedFeature">...</p>
+                </div>
+              </div>
+            </div>
                 </div>
               </div>
             </div>
@@ -486,6 +491,66 @@
             },
             options: { responsive: true }
           });
+    
+          const { data: prescriptions, error: prescriptionsError } = await client
+            .from("prescriptions")
+            .select("id");
+          
+          if (prescriptionsError) {
+            console.error("Failed to fetch prescriptions:", prescriptionsError);
+            return;
+          }
+          
+          // 2. Count past appointments only
+          const now = new Date();
+          const pastAppointments = appointments.filter(a => new Date(a.date_time) < now);
+          
+          const appointmentCount = pastAppointments.length;
+          const prescriptionCount = prescriptions.length;
+          
+          const featureChartCtx = document.getElementById("featureUsageChart").getContext("2d");
+          
+          if (window.featureUsageChart) {
+            window.featureUsageChart.destroy();
+          }
+          
+          window.featureUsageChart = new Chart(featureChartCtx, {
+            type: "bar",
+            data: {
+              labels: ["Appointments", "Prescriptions"],
+              datasets: [{
+                label: "Total Uses",
+                data: [appointmentCount, prescriptionCount],
+                backgroundColor: ["#36A2EB", "#FF6384"],
+                borderColor: ["#36A2EB", "#FF6384"],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { display: false },
+                tooltip: { enabled: true }
+              },
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: { precision: 0 }
+                }
+              }
+            }
+          });
+          
+          let winnerText = "";
+          if (appointmentCount > prescriptionCount) {
+            winnerText = "Appointments";
+          } else if (prescriptionCount > appointmentCount) {
+            winnerText = "Prescriptions";
+          } else {
+            winnerText = "Equal Usage";
+          }
+          
+          document.getElementById("mostUsedFeature").textContent = winnerText;
         }
       
       async function loadAdminDashboard() {
