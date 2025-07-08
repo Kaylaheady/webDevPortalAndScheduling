@@ -1,6 +1,7 @@
 # Online Appointment and Record System
 By Kayla Heady, Carl lazzeri, & Kateryna Hrishina
 
+Web Site: https://kaylaheady.github.io/webDevPortalAndScheduling/?
 - Collaborative project repository for the class: COP4813-0001 | Web applications programming.
 ## 1. Description  
 A web-based system that allows patients to:
