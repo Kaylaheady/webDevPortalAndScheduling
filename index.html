@@ -530,7 +530,6 @@
             return;
           }
           
-          // 2. Count past appointments only
           const now = new Date();
           const pastAppointments = appointments.filter(a => new Date(a.date_time) < now);
           
@@ -539,7 +538,7 @@
           
           const featureChartCtx = document.getElementById("featureUsageChart").getContext("2d");
           
-          if (window.featureUsageChart) {
+          if (window.featureUsageChart instanceof Chart) {
             window.featureUsageChart.destroy();
           }
           
