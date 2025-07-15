@@ -123,13 +123,13 @@
         
         <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
           <li class="nav-item" role="presentation">
-            <button class="nav-link active" id="tab-dashboard" data-bs-toggle="tab" data-bs-target="#dashboardContent" type="button" role="tab">Dashboard</button>
+            <button class="nav-link active" id="tab-dashboard" ...>Dashboard</button>
           </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-admin" data-bs-toggle="tab" data-bs-target="#adminContent" type="button" role="tab">Admin Tools</button>
+          <li class="nav-item" role="presentation" id="tab-admin-item">
+            <button class="nav-link" id="tab-admin" ...>Admin Tools</button>
           </li>
-          <li class="nav-item" role="presentation">
-            <button class="nav-link" id="tab-analytics" data-bs-toggle="tab" data-bs-target="#analyticsContent" type="button" role="tab">Analytics</button>
+          <li class="nav-item" role="presentation" id="tab-analytics-item">
+            <button class="nav-link" id="tab-analytics" ...>Analytics</button>
           </li>
         </ul>
         <div class="tab-content">
@@ -394,11 +394,14 @@
       
         const isDoctor = !!doctorCheck;
         if (isDoctor) {
-          document.getElementById("adminSection").style.display = "block";
-          loadAdminDashboard();
-        
-          document.getElementById("uploadPrescriptionForm").style.display = "none";
-        }
+  document.getElementById("adminSection").style.display = "block";
+  loadAdminDashboard();
+  document.getElementById("uploadPrescriptionForm").style.display = "none";
+} else {
+  document.getElementById("tab-admin-item").style.display = "none";
+  document.getElementById("tab-analytics-item").style.display = "none";
+}
+
         document.getElementById("tab-analytics").addEventListener("click", () => {
           loadAnalyticsDashboard();
         }, { once: true });
