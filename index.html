@@ -394,14 +394,11 @@
       
         const isDoctor = !!doctorCheck;
         if (isDoctor) {
-  document.getElementById("adminSection").style.display = "block";
-  loadAdminDashboard();
-  document.getElementById("uploadPrescriptionForm").style.display = "none";
-} else {
-  document.getElementById("tab-admin-item").style.display = "none";
-  document.getElementById("tab-analytics-item").style.display = "none";
-}
-
+          document.getElementById("adminSection").style.display = "block";
+          loadAdminDashboard();
+        
+          document.getElementById("uploadPrescriptionForm").style.display = "none";
+        }
         document.getElementById("tab-analytics").addEventListener("click", () => {
           loadAnalyticsDashboard();
         }, { once: true });
