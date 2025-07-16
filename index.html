@@ -158,7 +158,7 @@
       </div>
 
       <!-- Upload Prescription -->
-      <div class="card mb-4">
+      <div class="card mb-4" id="uploadPrescriptionCard">
         <div class="card-header">Upload Prescription</div>
         <div class="card-body">
           <form id="uploadPrescriptionForm" enctype="multipart/form-data">
@@ -395,11 +395,11 @@
         if (isDoctor) {
           document.getElementById("adminSection").style.display = "block";
           loadAdminDashboard();
-          document.getElementById("uploadPrescriptionForm").style.display = "block";
+          document.getElementById("uploadPrescriptionCard").style.display = "block";
         } else {
           document.getElementById("tab-admin-item").style.display = "none";
           document.getElementById("tab-analytics-item").style.display = "none";
-          document.getElementById("uploadPrescriptionForm").style.display = "none";
+          document.getElementById("uploadPrescriptionCard").style.display = "none";
         }
 
 
