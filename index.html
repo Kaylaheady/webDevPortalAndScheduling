@@ -393,13 +393,15 @@
       
         const isDoctor = !!doctorCheck && !!doctorCheck.id;
         if (isDoctor) {
-        document.getElementById("adminSection").style.display = "block";
-        loadAdminDashboard();
-        document.getElementById("uploadPrescriptionForm").style.display = "none";
+          document.getElementById("adminSection").style.display = "block";
+          loadAdminDashboard();
+          document.getElementById("uploadPrescriptionForm").style.display = "block";
         } else {
-        document.getElementById("tab-admin-item").style.display = "none";
-        document.getElementById("tab-analytics-item").style.display = "none";
+          document.getElementById("tab-admin-item").style.display = "none";
+          document.getElementById("tab-analytics-item").style.display = "none";
+          document.getElementById("uploadPrescriptionForm").style.display = "none";
         }
+
 
         const { data: doctors } = await client.from("doctor_data").select("*");
         const docSelect = document.getElementById("appointmentDoctor");
