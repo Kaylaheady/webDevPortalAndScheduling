@@ -451,11 +451,22 @@
         const pastDiv = document.getElementById("past");
         
         const renderAppointment = (a) => {
-          const isDoctor = a.doctor_data?.first_name && a.doctor_data?.last_name;
           const doctorName = a.doctor_data ? `${a.doctor_data.first_name} ${a.doctor_data.last_name}` : "Unknown Doctor";
           const patientName = a.patient_data ? `${a.patient_data.first_name} ${a.patient_data.last_name}` : "Unknown Patient";
         
-          return `<div><strong>${new Date(a.date_time).toLocaleString()}</strong> - Patient: ${patientName} | Doctor: ${doctorName}</div>`;
+          const formatter = new Intl.DateTimeFormat('en-US', {
+            dateStyle: 'short',  // MM/DD/YY
+            timeStyle: 'short',  // HH:MM AM/PM
+            timeZoneName: 'short' // e.g., EST
+          });
+        
+          const formattedDate = formatter.format(new Date(a.date_time));
+        
+          return `
+            <div>
+              <strong>${formattedDate}</strong><br/>
+              Patient: ${patientName} | Doctor: ${doctorName}
+            </div>`;
         };
         
         upcomingDiv.innerHTML = upcomingAppointments.map(renderAppointment).join('') || '<p>No upcoming appointments.</p>';
