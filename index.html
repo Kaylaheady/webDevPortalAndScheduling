@@ -455,9 +455,12 @@
           const patientName = a.patient_data ? `${a.patient_data.first_name} ${a.patient_data.last_name}` : "Unknown Patient";
         
           const formatter = new Intl.DateTimeFormat('en-US', {
-            dateStyle: 'short',  // MM/DD/YY
-            timeStyle: 'short',  // HH:MM AM/PM
-            timeZoneName: 'short' // e.g., EST
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZoneName: 'short'
           });
         
           const formattedDate = formatter.format(new Date(a.date_time));
