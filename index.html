@@ -799,11 +799,10 @@
         const { data: conflict } = await client
           .from("appointments")
           .select("*")
-          .eq("date_time", datetime)
-          .or(`doctor.eq.${doctor},patient.eq.${patientId}`);
-      
+          .or(`and(date_time.eq.${datetime},doctor.eq.${doctor}),and(date_time.eq.${datetime},patient.eq.${patientId})`);
+        
         if (conflict.length > 0) {
-          msg.textContent = "Time slot already booked.";
+          msg.textContent = "Time slot already booked (doctor or patient conflict).";
           msg.className = "text-danger";
           return;
         }
