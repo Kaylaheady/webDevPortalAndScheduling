@@ -800,7 +800,7 @@
           .from("appointments")
           .select("*")
           .eq("date_time", datetime)
-          .eq("doctor", doctor);
+          .or(`doctor.eq.${doctor},patient.eq.${patientId}`);
       
         if (conflict.length > 0) {
           msg.textContent = "Time slot already booked.";
