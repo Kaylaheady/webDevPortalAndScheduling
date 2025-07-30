@@ -402,7 +402,6 @@
           document.getElementById("uploadPrescriptionCard").style.display = "none";
         }
 
-
         const { data: doctors } = await client.from("doctor_data").select("*");
         const docSelect = document.getElementById("appointmentDoctor");
         docSelect.innerHTML = "";
@@ -413,7 +412,16 @@
           docSelect.appendChild(opt);
         });
 
-        const { data: prescriptions } = await client.from("prescriptions").select("*").eq("patient_id", user.id);
+        const { data: prescriptions, error: prescriptionsError } = await client
+          .from("prescriptions")
+          .select("*")
+          .eq("patient_id", userRow.id);
+        
+        if (prescriptionsError) {
+          console.error("Failed to load prescriptions:", prescriptionsError);
+          return;
+        }
+        
         const prescripDiv = document.getElementById("allPrescriptions");
         prescripDiv.innerHTML = prescriptions.length === 0 ? "<p>No prescriptions found.</p>" : "";
         for (const p of prescriptions) {
